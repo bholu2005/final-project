@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------ */
+/* 🔤 CUSTOM FONTS (Public Folder se load honge)  */
+/* ------------------------------------------------ */
+
+@font-face {
+    font-family: 'Harrington';
+    src: url('/fonts/Harrington.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Black Chancery';
+    src: url('/fonts/BlackChancery.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Merlin';
+    src: url('/fonts/Merlin.ttf') format('truetype');
+}
+
+/* ------------------------------------------------ */
+/* 🎨 GLOBAL STYLES                                */
+/* ------------------------------------------------ */
+
+body {
+    background-color: #E8D5C6;
+    color: #000000;
+    font-family: 'Merlin', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Harrington', serif;
+}
+
+/* Scrollbar Hide Logic */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
