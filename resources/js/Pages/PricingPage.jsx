@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Crown, Zap, Shield, Star, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 export default function PricingPage({ onBack }) {
     const [billingCycle, setBillingCycle] = useState('monthly'); // monthly, biannual, yearly
@@ -56,14 +57,40 @@ export default function PricingPage({ onBack }) {
         if (billingCycle === 'yearly') return '/year';
     };
 
-    // Fake Payment Handler
-    const handlePurchase = (index) => {
+    // Real-simulation Payment Handler
+    const handlePurchase = async (index) => {
         setProcessing(index);
-        setTimeout(() => {
-            alert("Payment Gateway Simulation: Purchase Successful! (INR)");
+        const plan = plans[index];
+        const price = getPrice(plan);
+        const token = sessionStorage.getItem('auth_token');
+
+        try {
+            if (!token) {
+                alert("Please log in to upgrade your subscription.");
+                setProcessing(null);
+                return;
+            }
+
+            // Call real backend API
+            const response = await axios.post('http://127.0.0.1:8000/api/subscription/upgrade', {
+                plan_name: plan.name,
+                amount: price
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                alert(`Payment Gateway Simulation: Successfully upgraded to ${plan.name}!`);
+                if (onBack) onBack();
+            } else {
+                alert("Upgrade failed: " + (response.data.message || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Upgrade Error:", err);
+            alert("Failed to connect to the subscription server. Please try again.");
+        } finally {
             setProcessing(null);
-            if(onBack) onBack(); // Redirect to home/dashboard on success
-        }, 2000);
+        }
     };
 
     return (

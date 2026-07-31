@@ -43,6 +43,9 @@ Route::post('/forgot/reset', [AuthController::class, 'resetPassword']);
 // Live Tools
 Route::post('/tools/headers', [ToolController::class, 'checkHeaders']);
 
+// PDF Report Download (Authenticated via query token or session)
+Route::get('/scan/{id}/download', [ReportController::class, 'download']);
+
 
 // ==========================================
 // 2️⃣ PROTECTED ROUTES (Login Required)
@@ -60,9 +63,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/scans', [ScanController::class, 'index']);           // History List
     Route::get('/scan/{id}', [ScanController::class, 'show']);        // Scan Result/Dashboard
     Route::delete('/scans/clear', [ScanController::class, 'destroyAll']); // Clear History
-    
-    // --- Reports (PDF) ---
-    Route::get('/scan/{id}/download', [ReportController::class, 'download']);
 
     // --- User Profile ---
     Route::get('/profile', [ProfileController::class, 'show']);

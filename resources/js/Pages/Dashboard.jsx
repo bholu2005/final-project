@@ -66,7 +66,8 @@ export default function Dashboard({ scanId }) {
 
     const handleDownload = () => {
         if (scanData?.scan_reference) {
-            window.open(`http://127.0.0.1:8000/api/scan/${scanData.scan_reference}/download`, '_blank');
+            const token = sessionStorage.getItem('auth_token');
+            window.open(`http://127.0.0.1:8000/api/scan/${scanData.scan_reference}/download?token=${token}`, '_blank');
         }
     };
 
