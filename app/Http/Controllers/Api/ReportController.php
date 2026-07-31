@@ -6,12 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Models\Scan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ReportController extends Controller
 {
-    public function download($id)
+    public function download($id, Request $request)
     {
-        // 1. Scan Data dhoondo
+        // 1. Authenticate via query token or bearer token
+        $user = auth('sanctum')->user();
+
+        if (!$user && $request->has('token')) {
+            $tokenModel = PersonalAccessToken::findToken($request->query('token'));
+            if ($tokenModel) {
+                $user = $tokenModel->tokenable;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        // 2. Scan Data dhoondo
         $scan = Scan::where('scan_reference', $id)->firstOrFail();
 
         // 2. Data Prepare karo
