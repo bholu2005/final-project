@@ -6,7 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-export default function AdminNavbar({ activePage, onNavigate, user, onLogout }) { 
+export default function AdminNavbar({ activePage, onNavigate, user, onLogout, onToggleView }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -111,6 +111,12 @@ export default function AdminNavbar({ activePage, onNavigate, user, onLogout }) 
                             <Bell size={18} />
                             {unreadCount > 0 && <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white group-hover:border-black animate-pulse"></span>}
                         </button>
+
+                        {onToggleView && (
+                            <button onClick={onToggleView} className="hidden sm:flex bg-white text-black border border-black/10 px-5 py-2 rounded-full font-bold text-xs md:text-sm hover:bg-gray-50 transition shadow-md items-center gap-2">
+                                <span>Client View</span>
+                            </button>
+                        )}
 
                         <button onClick={onLogout} className="hidden sm:flex bg-black text-white px-5 py-2 rounded-full font-bold text-xs md:text-sm hover:bg-gray-900 transition shadow-lg items-center gap-2">
                             <span>Logout</span><LogOut size={14}/>
