@@ -8,7 +8,9 @@ export default function AdminSettings() {
         maintenance_mode: 'false',
         free_scan_limit: '3',
         global_announcement: '',
-        registration_open: 'true'
+        registration_open: 'true',
+        enable_ai_engine: 'true',
+        detailed_security_logs: 'true'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -83,6 +85,39 @@ export default function AdminSettings() {
                             onChange={(e) => setSettings({...settings, free_scan_limit: e.target.value})}
                             className="w-full bg-gray-50 border border-black/10 rounded-xl px-4 py-2 font-bold focus:outline-none focus:border-black transition"
                         />
+                    </div>
+                </div>
+
+                {/* 1b. Additional Admin Toggles */}
+                <div className="grid md:grid-cols-3 gap-6">
+                    {/* Registration Toggle */}
+                    <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
+                        <h4 className="font-bold text-sm mb-2 text-black">New Registration Status</h4>
+                        <p className="text-xs text-black/50 mb-4">Allow new users to sign up.</p>
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <button type="button" onClick={() => setSettings({...settings, registration_open: 'true'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.registration_open === 'true' ? 'bg-white shadow-sm text-black' : 'text-black/40'}`}>Open</button>
+                            <button type="button" onClick={() => setSettings({...settings, registration_open: 'false'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.registration_open === 'false' ? 'bg-white shadow-sm text-red-500' : 'text-black/40'}`}>Closed</button>
+                        </div>
+                    </div>
+
+                    {/* AI Engine Toggle */}
+                    <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
+                        <h4 className="font-bold text-sm mb-2 text-black">Enable AI Analysis Engine</h4>
+                        <p className="text-xs text-black/50 mb-4">Allow users to view AI Fix Suggestions.</p>
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <button type="button" onClick={() => setSettings({...settings, enable_ai_engine: 'true'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.enable_ai_engine === 'true' ? 'bg-white shadow-sm text-black' : 'text-black/40'}`}>Enabled</button>
+                            <button type="button" onClick={() => setSettings({...settings, enable_ai_engine: 'false'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.enable_ai_engine === 'false' ? 'bg-white shadow-sm text-red-500' : 'text-black/40'}`}>Disabled</button>
+                        </div>
+                    </div>
+
+                    {/* Detailed intrusion logging Toggle */}
+                    <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
+                        <h4 className="font-bold text-sm mb-2 text-black">Intrusion Detection Logging</h4>
+                        <p className="text-xs text-black/50 mb-4">Log deep payload security alerts.</p>
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <button type="button" onClick={() => setSettings({...settings, detailed_security_logs: 'true'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.detailed_security_logs === 'true' ? 'bg-white shadow-sm text-black' : 'text-black/40'}`}>Active</button>
+                            <button type="button" onClick={() => setSettings({...settings, detailed_security_logs: 'false'})} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${settings.detailed_security_logs === 'false' ? 'bg-white shadow-sm text-red-500' : 'text-black/40'}`}>Muted</button>
+                        </div>
                     </div>
                 </div>
 

@@ -135,11 +135,15 @@ export default function ScanPage({ onRunScan }) {
     );
 
     return (
-        <div className="pt-28 pb-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen font-body">
+        <div className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen font-body">
             
             <form onSubmit={(e) => e.preventDefault()}>
                 
-                <div className="text-center mb-10"><h2 className="font-heading text-5xl mb-2">Target Configuration</h2><p className="text-black/50">Select target type and scope.</p></div>
+                <div className="text-center mb-12">
+                    <span className="text-xs font-bold tracking-widest uppercase bg-black/5 px-3 py-1 rounded-full border border-black/10">Configuration</span>
+                    <h2 className="font-heading text-4xl md:text-5xl mt-3 mb-2">Target Configuration</h2>
+                    <p className="text-black/50">Select target type, scope, and optional manual parameters.</p>
+                </div>
 
                 <div className="grid lg:grid-cols-12 gap-8 items-start">
                     
@@ -151,52 +155,96 @@ export default function ScanPage({ onRunScan }) {
                             <ScopeCard id="fullstack" label="Fullstack" icon={Layers} desc="Complete Analysis" />
                         </div>
 
-                        <div className="bg-white p-8 rounded-[2rem] border-2 border-dashed border-black/10 text-center min-h-[300px] flex flex-col items-center justify-center">
+                        <div className="bg-white p-10 rounded-[2.5rem] border-2 border-dashed border-black/15 text-center min-h-[350px] flex flex-col items-center justify-center shadow-lg hover:border-black/30 transition-all duration-300">
                             {inputType === 'zip' ? (
                                 selectedFile ? (
                                     <div className="text-green-700 font-bold flex flex-col items-center">
-                                        <CheckCircle2 size={48} className="mb-2"/> {selectedFile.name}
+                                        <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 border border-green-100">
+                                            <CheckCircle2 size={32} className="text-green-600"/>
+                                        </div>
+                                        <span className="text-xl font-heading text-black">{selectedFile.name}</span>
                                         <div className="text-sm text-black/40 mt-1">{(selectedFile.size / (1024*1024)).toFixed(2)} MB</div>
-                                        <button onClick={removeFile} className="text-xs text-red-500 mt-4 underline font-bold">Remove File</button>
+                                        <button onClick={removeFile} className="text-xs text-red-500 mt-6 underline font-bold hover:text-red-600 transition">Remove File</button>
                                     </div>
                                 ) : (
                                     <div onClick={handleFileClick} className="cursor-pointer group">
-                                        <Upload size={48} className="mx-auto text-black/30 group-hover:text-black mb-4 transition"/>
-                                        <h3 className="font-bold text-xl">Upload Project ZIP</h3>
-                                        <p className="text-sm text-black/40">Code files only (Max 100MB)</p>
+                                        <div className="w-16 h-16 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-black/5 group-hover:scale-110 transition duration-300">
+                                            <Upload size={28} className="text-black/60 group-hover:text-black transition"/>
+                                        </div>
+                                        <h3 className="font-bold text-xl mb-1 text-black">Upload Project ZIP</h3>
+                                        <p className="text-sm text-black/40">Drag and drop or browse files (Max 100MB)</p>
                                     </div>
                                 )
                             ) : (
                                 <div className="w-full max-w-lg">
-                                    <div className="flex justify-center mb-4"><Globe size={48} className="text-blue-500"/></div>
-                                    <h3 className="font-bold text-xl mb-4">Enter Target URL</h3>
-                                    <input type="text" value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com" className="w-full p-4 bg-gray-50 rounded-xl text-center outline-none border focus:border-black transition"/>
+                                    <div className="flex justify-center mb-4">
+                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100">
+                                            <Globe size={28} className="text-blue-600 animate-pulse"/>
+                                        </div>
+                                    </div>
+                                    <h3 className="font-bold text-xl mb-4 text-black">Enter Target URL</h3>
+                                    <input type="text" value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com" className="w-full p-4 bg-gray-50 rounded-2xl text-center outline-none border border-black/5 focus:border-black focus:bg-white transition shadow-inner font-mono text-sm"/>
                                 </div>
                             )}
-                            <div className="mt-8 flex bg-gray-100 p-1 rounded-lg">
-                                <button onClick={() => setInputType('zip')} className={`p-2 px-4 rounded-md text-sm font-bold transition ${inputType === 'zip' ? 'bg-white shadow-sm text-black' : 'text-black/40'}`}>ZIP Upload</button>
-                                <button onClick={() => setInputType('url')} className={`p-2 px-4 rounded-md text-sm font-bold transition ${inputType === 'url' ? 'bg-white shadow-sm text-black' : 'text-black/40'}`}>Live URL</button>
+                            <div className="mt-8 flex bg-gray-100 p-1.5 rounded-xl border border-black/5">
+                                <button onClick={() => setInputType('zip')} className={`p-2 px-6 rounded-lg text-xs font-bold transition ${inputType === 'zip' ? 'bg-white shadow-sm text-black' : 'text-black/40 hover:text-black'}`}>ZIP Upload</button>
+                                <button onClick={() => setInputType('url')} className={`p-2 px-6 rounded-lg text-xs font-bold transition ${inputType === 'url' ? 'bg-white shadow-sm text-black' : 'text-black/40 hover:text-black'}`}>Live URL</button>
                             </div>
                             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".zip,.rar,.tar,.gz" />
                         </div>
 
-                        {inputType === 'zip' && (<div className="bg-white p-4 rounded-xl border border-black/5 flex justify-between items-center shadow-sm"><div className="flex items-center gap-3"><div className="bg-blue-50 p-2 rounded-lg text-blue-600"><Database size={20}/></div><div><p className="font-bold text-sm">Database File (Optional)</p><p className="text-xs text-black/40">{selectedDB ? selectedDB.name : 'Upload .sql file'}</p></div></div><button onClick={() => dbInputRef.current.click()} className="text-xs font-bold bg-black text-white px-4 py-2 rounded-lg">{selectedDB ? 'Change' : 'Upload SQL'}</button><input type="file" ref={dbInputRef} onChange={handleDBChange} className="hidden" accept=".sql" /></div>)}
-                        {errorMessage && <div className="mt-4 p-4 bg-red-50 text-red-600 border border-red-100 rounded-xl text-center font-bold flex items-center justify-center gap-2"><AlertOctagon size={18}/> {errorMessage}</div>}
+                        {inputType === 'zip' && (
+                            <div className="bg-white p-5 rounded-3xl border border-black/5 flex justify-between items-center shadow-md hover:shadow-lg transition">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-blue-50 p-3 rounded-2xl text-blue-600 border border-blue-100">
+                                        <Database size={22}/>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm text-black">Database File (Optional)</p>
+                                        <p className="text-xs text-black/40">{selectedDB ? selectedDB.name : 'Include .sql file for schema analysis'}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => dbInputRef.current.click()} className="text-xs font-bold bg-black text-white px-5 py-2.5 rounded-xl hover:scale-105 transition shadow-sm">
+                                    {selectedDB ? 'Change' : 'Upload SQL'}
+                                </button>
+                                <input type="file" ref={dbInputRef} onChange={handleDBChange} className="hidden" accept=".sql" />
+                            </div>
+                        )}
+                        {errorMessage && (
+                            <div className="mt-4 p-4 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-center font-bold flex items-center justify-center gap-2 shadow-sm">
+                                <AlertOctagon size={18}/> {errorMessage}
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT: SETTINGS */}
                     <div className="lg:col-span-4 flex flex-col gap-4">
-                        <div className="bg-white p-5 rounded-[2rem] shadow-xl border border-white/50 h-[calc(100vh-8rem)] flex flex-col sticky top-24">
-                            <div className="flex justify-between items-center mb-4 border-b border-black/5 pb-2"><h3 className="font-heading text-lg">Configuration</h3><Settings className="text-black/40"/></div>
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-black/5 min-h-[500px] h-auto flex flex-col lg:sticky lg:top-32">
+                            <div className="flex justify-between items-center mb-6 border-b border-black/5 pb-3">
+                                <h3 className="font-heading text-xl text-black">Scan Options</h3>
+                                <Settings className="text-black/40" size={20}/>
+                            </div>
                             
-                            <div className="flex flex-col gap-2 mb-3 shrink-0">
-                                <button type="button" onClick={() => setScanMode('auto')} className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${scanMode === 'auto' ? 'border-black bg-black text-white shadow-md' : 'border-black/10 hover:bg-gray-50'}`}><Zap size={20} className={scanMode === 'auto' ? 'text-skin' : 'text-black'} /><div><div className="font-bold text-sm">Auto Pilot (AI)</div><div className={`text-[10px] ${scanMode === 'auto' ? 'text-white/60' : 'text-black/40'}`}>Full System Analysis</div></div></button>
-                                <button type="button" onClick={() => setScanMode('manual')} className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${scanMode === 'manual' ? 'border-black bg-black text-white shadow-md' : 'border-black/10 hover:bg-gray-50'}`}><Settings size={20} className={scanMode === 'manual' ? 'text-skin' : 'text-black'} /><div><div className="font-bold text-sm">Manual Mode</div><div className={`text-[10px] ${scanMode === 'manual' ? 'text-white/60' : 'text-black/40'}`}>Select Engines Customly</div></div></button>
+                            <div className="flex flex-col gap-2 mb-4 shrink-0">
+                                <button type="button" onClick={() => setScanMode('auto')} className={`p-4 rounded-2xl border flex items-center gap-3 transition-all text-left ${scanMode === 'auto' ? 'border-black bg-black text-white shadow-md' : 'border-black/5 hover:bg-gray-50'}`}>
+                                    <Zap size={22} className={scanMode === 'auto' ? 'text-skin' : 'text-black'} />
+                                    <div>
+                                        <div className="font-bold text-sm">Auto Pilot (AI)</div>
+                                        <div className={`text-[10px] ${scanMode === 'auto' ? 'text-white/60' : 'text-black/40'}`}>Full Automated Analysis</div>
+                                    </div>
+                                </button>
+                                <button type="button" onClick={() => setScanMode('manual')} className={`p-4 rounded-2xl border flex items-center gap-3 transition-all text-left ${scanMode === 'manual' ? 'border-black bg-black text-white shadow-md' : 'border-black/5 hover:bg-gray-50'}`}>
+                                    <Settings size={22} className={scanMode === 'manual' ? 'text-skin' : 'text-black'} />
+                                    <div>
+                                        <div className="font-bold text-sm">Manual Mode</div>
+                                        <div className={`text-[10px] ${scanMode === 'manual' ? 'text-white/60' : 'text-black/40'}`}>Customize Scanning Modules</div>
+                                    </div>
+                                </button>
                             </div>
 
                             <AnimatePresence>
                                 {scanMode === 'manual' && (
-                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-y-auto pr-2 mb-2 scrollbar-thin scrollbar-thumb-black/20 scrollbar-track-transparent flex-grow">
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-y-auto pr-2 mb-4 scrollbar-thin scrollbar-thumb-black/20 scrollbar-track-transparent flex-grow max-h-[250px]">
                                         <CheckboxGroup title="Security" icon={ShieldCheck} options={[{key:'sqlInjection',label:'SQL Injection'}, {key:'xssAttack',label:'XSS Check'}, {key:'authBypass',label:'Auth Bypass'}]} />
                                         <CheckboxGroup title="Code Quality" icon={FileCode} options={[{key:'staticAnalysis',label:'Static Analysis'}, {key:'deadCodeDetection',label:'Dead Code'}, {key:'memoryLeakCheck',label:'Memory Leaks'}]} />
                                         <CheckboxGroup title="Database" icon={Database} options={[{key:'weakPasswords',label:'Weak Passwords'}, {key:'aiFixSuggestions',label:'AI Fixes'}]} />
@@ -204,14 +252,22 @@ export default function ScanPage({ onRunScan }) {
                                 )}
                             </AnimatePresence>
 
-                            <div className="pt-4 mt-auto border-t border-black/5 space-y-3">
-                                <div onClick={() => setEnableAIFix(!enableAIFix)} className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${enableAIFix ? 'bg-skin/30 border-black' : 'bg-gray-50 border-transparent'}`}><div className="flex items-center gap-2"><Sparkles size={16}/><span className="text-xs font-bold">Auto-Fix (AI)</span></div><div className={`w-8 h-4 rounded-full p-0.5 ${enableAIFix ? 'bg-black' : 'bg-gray-300'}`}><div className={`w-3 h-3 bg-white rounded-full transition-transform ${enableAIFix ? 'translate-x-4' : ''}`}/></div></div>
+                            <div className="pt-4 mt-auto border-t border-black/5 space-y-4">
+                                <div onClick={() => setEnableAIFix(!enableAIFix)} className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition ${enableAIFix ? 'bg-skin/30 border-black' : 'bg-gray-50 border-transparent'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles size={16} className={enableAIFix ? 'text-yellow-600 fill-yellow-600' : 'text-black/50'}/>
+                                        <span className="text-xs font-bold text-black">Auto-Fix with AI</span>
+                                    </div>
+                                    <div className={`w-8 h-4 rounded-full p-0.5 transition ${enableAIFix ? 'bg-black' : 'bg-gray-300'}`}>
+                                        <div className={`w-3 h-3 bg-white rounded-full transition-transform ${enableAIFix ? 'translate-x-4' : ''}`}/>
+                                    </div>
+                                </div>
                                 
                                 <button 
                                     type="button" 
                                     onClick={handleStartScan} 
                                     disabled={status === 'uploading' || status === 'success'} 
-                                    className={`w-full py-3.5 rounded-xl font-bold flex justify-center gap-2 hover:scale-[1.02] transition ${status === 'success' ? 'bg-green-600 text-white' : 'bg-black text-white'} ${status === 'uploading' ? 'opacity-70 cursor-wait' : ''}`}
+                                    className={`w-full py-4 rounded-2xl font-bold flex justify-center gap-2 hover:scale-[1.01] transition shadow-md ${status === 'success' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-black text-white hover:bg-gray-900'} ${status === 'uploading' ? 'opacity-70 cursor-wait' : ''}`}
                                 >
                                     {status === 'uploading' && <Loader2 size={20} className="animate-spin" />}
                                     {status === 'success' && <CheckCircle2 size={20} />}

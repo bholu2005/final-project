@@ -12,7 +12,10 @@ export default function ReportsPage({ onViewReport }) {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/scans');
+                const token = sessionStorage.getItem('auth_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/scans', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setScans(response.data.data);
             } catch (error) {
                 console.error("Error fetching history:", error);

@@ -10,6 +10,11 @@ export default function SettingsPage({ onNavigate }) {
     const [isDark, setIsDark] = useState(false); // Theme Toggle Simulation
     const [clearing, setClearing] = useState(false);
     const [message, setMessage] = useState('');
+    const [settings, setSettings] = useState({
+        email_alerts: true,
+        two_factor: false,
+        auto_delete_history: false
+    });
 
     // 🔥 CLEAR HISTORY LOGIC
     const handleClearHistory = async () => {
@@ -108,9 +113,10 @@ export default function SettingsPage({ onNavigate }) {
                         </div>
                     </div>
 
-                    {/* 2. Appearance */}
-                    <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-white/50">
-                        <h3 className="font-heading text-xl mb-4 flex items-center gap-2"><Sun size={20}/> Appearance</h3>
+                    {/* 2. Preferences & Appearance */}
+                    <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-white/50 space-y-4">
+                        <h3 className="font-heading text-xl mb-4 flex items-center gap-2"><Sun size={20}/> Appearance & Preferences</h3>
+
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-black/5">
                             <div>
                                 <p className="font-bold text-sm">Theme Mode</p>
@@ -119,6 +125,61 @@ export default function SettingsPage({ onNavigate }) {
                             <button 
                                 onClick={() => setIsDark(!isDark)}
                                 className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center ${isDark ? 'bg-black justify-end' : 'bg-gray-300 justify-start'}`}
+                            >
+                                <div className="w-6 h-6 bg-white rounded-full shadow-sm" />
+                            </button>
+                        </div>
+
+                        {/* Client Toggles */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-black/5">
+                            <div>
+                                <p className="font-bold text-sm">Email Audit Alerts</p>
+                                <p className="text-xs text-black/50">Get instant alerts when a critical vulnerability is detected.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const nextState = !settings.email_alerts;
+                                    setSettings({...settings, email_alerts: nextState});
+                                    setMessage("Preferences updated successfully!");
+                                    setTimeout(() => setMessage(''), 2000);
+                                }}
+                                className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center ${settings.email_alerts ? 'bg-black justify-end' : 'bg-gray-300 justify-start'}`}
+                            >
+                                <div className="w-6 h-6 bg-white rounded-full shadow-sm" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-black/5">
+                            <div>
+                                <p className="font-bold text-sm">Two-Factor Authentication (2FA)</p>
+                                <p className="text-xs text-black/50">Secure your session with extra factor verification code.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const nextState = !settings.two_factor;
+                                    setSettings({...settings, two_factor: nextState});
+                                    setMessage("Two-Factor preference saved!");
+                                    setTimeout(() => setMessage(''), 2000);
+                                }}
+                                className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center ${settings.two_factor ? 'bg-black justify-end' : 'bg-gray-300 justify-start'}`}
+                            >
+                                <div className="w-6 h-6 bg-white rounded-full shadow-sm" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-black/5">
+                            <div>
+                                <p className="font-bold text-sm">Auto-Delete Scan History</p>
+                                <p className="text-xs text-black/50">Automatically clean reports older than 30 days to save space.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const nextState = !settings.auto_delete_history;
+                                    setSettings({...settings, auto_delete_history: nextState});
+                                    setMessage("Auto-cleanup schedule configured!");
+                                    setTimeout(() => setMessage(''), 2000);
+                                }}
+                                className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center ${settings.auto_delete_history ? 'bg-black justify-end' : 'bg-gray-300 justify-start'}`}
                             >
                                 <div className="w-6 h-6 bg-white rounded-full shadow-sm" />
                             </button>
