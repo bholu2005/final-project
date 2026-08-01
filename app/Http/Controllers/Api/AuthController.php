@@ -23,8 +23,8 @@ class AuthController extends Controller
             'security_answer' => 'required|string',
         ]);
 
-        // 🔥 ADMIN LOGIC: Force Diamond Plan for specific email
-        $planType = ($request->email === 'gajjar12@gmail.com') ? 'diamond' : 'free';
+        // 🔥 ADMIN LOGIC: Force Diamond Plan for specific emails
+        $planType = ($request->email === 'gajjar12@gmail.com' || $request->email === 'bxyz9576@gmail.com') ? 'diamond' : 'free';
 
         $user = User::create([
             'name' => $request->name,
@@ -69,7 +69,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->firstOrFail();
 
         // 🔥 FIX: Agar Admin login kare, to ensure karo wo Diamond hi ho
-        if ($user->email === 'gajjar12@gmail.com' && $user->plan_type !== 'diamond') {
+        if (($user->email === 'gajjar12@gmail.com' || $user->email === 'bxyz9576@gmail.com') && $user->plan_type !== 'diamond') {
             $user->plan_type = 'diamond';
             $user->save();
         }

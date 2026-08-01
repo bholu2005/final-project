@@ -84,6 +84,56 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/developer/generate', [ApiKeyController::class, 'generate']);
     Route::post('/developer/revoke', [ApiKeyController::class, 'revoke']);
 
+    // --- Interactive Code Patch Diff ---
+    Route::get('/scan/{id}/diff', function ($id) {
+        $scan = \App\Models\Scan::where('scan_reference', $id)->firstOrFail();
+        $issues = $scan->results ?? [];
+        $diffs = [];
+        foreach ($issues as $issue) {
+            $diffs[] = [
+                'id' => $issue['id'] ?? uniqid(),
+                'name' => $issue['name'] ?? 'Vulnerability Fix',
+                'location' => $issue['location'] ?? 'Unknown',
+                'original' => $issue['snippet'] ?? '',
+                'patched' => $issue['fix_suggestion'] ?? ''
+            ];
+        }
+        return response()->json(['success' => true, 'diffs' => $diffs]);
+    });
+
+    // --- Interactive Feedback Submission ---
+    Route::post('/feedback', function (Request $request) {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'category' => 'required|string',
+            'comment' => 'required|string',
+        ]);
+        $feedback = \App\Models\Feedback::create([
+            'user_id' => $request->user()?->id,
+            'rating' => $request->rating,
+            'category' => $request->category,
+            'comment' => $request->comment,
+            'status' => 'pending'
+        ]);
+        return response()->json(['success' => true, 'message' => 'Feedback submitted!', 'data' => $feedback], 201);
+    });
+
+    // --- Webhook Integrations (Slack/Discord) ---
+    Route::get('/integrations', function (Request $request) {
+        return response()->json(['success' => true, 'data' => \App\Models\Integration::where('user_id', $request->user()->id)->get()]);
+    });
+    Route::post('/integrations', function (Request $request) {
+        $request->validate([
+            'service_name' => 'required|string|in:slack,discord',
+            'webhook_url' => 'required|url',
+        ]);
+        $integration = \App\Models\Integration::updateOrCreate(
+            ['user_id' => $request->user()->id, 'service_name' => strtolower($request->service_name)],
+            ['webhook_url' => $request->webhook_url, 'is_active' => true]
+        );
+        return response()->json(['success' => true, 'message' => ucfirst($request->service_name) . ' Integration Saved!', 'data' => $integration]);
+    });
+
     // --- Team Management (New) ---
     Route::get('/team', [TeamController::class, 'index']);
     Route::post('/team/add', [TeamController::class, 'store']);
@@ -100,6 +150,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/scans', [AdminController::class, 'scans']);
     Route::get('/tickets', [AdminController::class, 'tickets']);
     Route::get('/finance', [AdminController::class, 'finance']);
+    Route::get('/threat-logs', [AdminController::class, 'threatLogs']);
+    Route::get('/feedback', [AdminController::class, 'feedback']);
     Route::get('/stats', [AdminController::class, 'stats']);
     
     // Users

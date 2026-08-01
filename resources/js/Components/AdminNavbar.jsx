@@ -15,6 +15,7 @@ export default function AdminNavbar({ activePage, onNavigate, user, onLogout }) 
         { id: 'AdminDashboard', icon: LayoutDashboard, label: 'Overview' },
         { id: 'AdminUsers', icon: Users, label: 'Users' },
         { id: 'AdminScans', icon: Activity, label: 'Scans' },
+        { id: 'SecurityThreats', icon: ShieldCheck, label: 'WAF Logs' },
         { id: 'AdminTickets', icon: Ticket, label: 'Support' },
         { id: 'AdminFinance', icon: CreditCard, label: 'Finance' },
         { id: 'AdminSettings', icon: Settings, label: 'System' },

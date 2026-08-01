@@ -24,6 +24,10 @@ import SupportPage from './SupportPage';
 import DevelopersPage from './DevelopersPage';
 import TeamPage from './TeamPage';
 import MonitorPage from './MonitorPage';
+import CodePatchSandboxPage from './CodePatchSandboxPage';
+import ApiPlaygroundPage from './ApiPlaygroundPage';
+import SecurityThreatsPage from './SecurityThreatsPage';
+import IntegrationsPage from './IntegrationsPage';
 // ==========================================
 // 👑 ADMIN COMPONENTS & PAGES IMPORT
 // ==========================================
@@ -153,6 +157,12 @@ export default function Home() {
                         {currentPage === 'AdminFinance' && <AdminFinance />}
                         {currentPage === 'AdminSettings' && <AdminSettings />}
 
+                        {currentPage === 'SecurityThreats' && (
+                            <motion.div key="secThreats" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                                <SecurityThreatsPage onBack={() => setCurrentPage('AdminDashboard')} />
+                            </motion.div>
+                        )}
+
                         {/* 🔥 ADMIN FULL PAGES */}
                         {currentPage === 'AdminProfile' && (
                             <motion.div key="admProfile" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
@@ -232,7 +242,7 @@ export default function Home() {
                     {/* 4. DASHBOARD */}
                     {currentPage === 'Dashboard' && (
                         <motion.div key="dashboard" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                            <Dashboard scanId={currentScanId} />
+                            <Dashboard scanId={currentScanId} onNavigate={setCurrentPage} />
                         </motion.div>
                     )}
                     
@@ -312,6 +322,24 @@ export default function Home() {
                     {currentPage === 'Monitor' && (
                         <motion.div key="monitor" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
                             <MonitorPage onBack={() => setCurrentPage('Home')} />
+                        </motion.div>
+                    )}
+
+                    {currentPage === 'CodePatchSandbox' && (
+                        <motion.div key="patchSandbox" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                            <CodePatchSandboxPage scanId={currentScanId} onBack={() => setCurrentPage('Dashboard')} />
+                        </motion.div>
+                    )}
+
+                    {currentPage === 'ApiPlayground' && (
+                        <motion.div key="apiPlay" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                            <ApiPlaygroundPage onBack={() => setCurrentPage('Settings')} />
+                        </motion.div>
+                    )}
+
+                    {currentPage === 'Integrations' && (
+                        <motion.div key="webhooks" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                            <IntegrationsPage onBack={() => setCurrentPage('Settings')} />
                         </motion.div>
                     )}
 
