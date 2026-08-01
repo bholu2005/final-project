@@ -11,7 +11,7 @@ import { Hexagon, Loader2, RefreshCw, AlertCircle, CheckCircle, Eye, EyeOff, Upl
 const PillInput = ({ type, placeholder, value, onChange, icon: Icon, required = true, isPass = false, togglePass, showPass }) => (
     <div className="relative w-full">
         <input 
-            type={isPass && !showPass ? 'password' : type} 
+            type={isPass ? (showPass ? 'text' : 'password') : type}
             value={value}
             onChange={onChange}
             placeholder={placeholder}

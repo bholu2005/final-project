@@ -148,7 +148,10 @@ export default function Home() {
                         onNavigate={setCurrentPage} 
                         onLogout={handleLogout} 
                         user={user} 
-                        onToggleView={() => setIsAdminView(false)}
+                        onToggleView={() => {
+                            setIsAdminView(false);
+                            setCurrentPage('Home');
+                        }}
                     />
                 )}
 
@@ -206,7 +209,10 @@ export default function Home() {
                     onNavigate={setCurrentPage} 
                     user={user} 
                     onLogout={handleLogout} 
-                    onToggleView={() => setIsAdminView(true)}
+                    onToggleView={() => {
+                        setIsAdminView(true);
+                        setCurrentPage('AdminDashboard');
+                    }}
                 />
             )}
 

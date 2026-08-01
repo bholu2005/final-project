@@ -42,8 +42,6 @@ export default function PricingPage({ onBack }) {
 
     // Price Calculator
     const getPrice = (plan) => {
-        if (plan.isDiamond) return 5000;
-        
         if (billingCycle === 'monthly') return plan.basePrice;
         if (billingCycle === 'biannual') return Math.round(plan.basePrice * 6 * 0.90);
         if (billingCycle === 'yearly') return Math.round(plan.basePrice * 12 * 0.80);
@@ -51,7 +49,6 @@ export default function PricingPage({ onBack }) {
 
     // Label Text
     const getDurationText = (plan) => {
-        if (plan.isDiamond) return '/year';
         if (billingCycle === 'monthly') return '/mo';
         if (billingCycle === 'biannual') return '/6mo';
         if (billingCycle === 'yearly') return '/year';
@@ -133,7 +130,7 @@ export default function PricingPage({ onBack }) {
                             initial={{ opacity: 0, y: 20 }} 
                             animate={{ opacity: 1, y: 0 }} 
                             transition={{ delay: i * 0.1 }}
-                            className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 relative overflow-hidden group flex flex-col hover:scale-105 transition-transform duration-300 ${plan.isDiamond ? 'border-purple-200' : 'border-white'}`}
+                            className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 relative overflow-hidden group flex flex-col hover:scale-105 transition-transform duration-300 ${plan.isDiamond ? 'border-purple-200 shadow-purple-100' : 'border-white'}`}
                         >
                             {/* Background Icon */}
                             <div className={`absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition ${plan.color} rotate-12`}>
@@ -155,9 +152,6 @@ export default function PricingPage({ onBack }) {
                                     ₹{price.toLocaleString('en-IN')}
                                     <span className="text-lg text-black/40 font-body mb-2">{duration}</span>
                                 </div>
-                                {plan.isDiamond && billingCycle !== 'yearly' && (
-                                    <p className="text-xs text-red-500 mt-1 font-bold">*Available only on Yearly Plan</p>
-                                )}
                             </div>
                             
                             {/* Features */}
@@ -173,14 +167,14 @@ export default function PricingPage({ onBack }) {
                             {/* Action Button */}
                             <button 
                                 onClick={() => handlePurchase(i)}
-                                disabled={isLocked || processing === i}
+                                disabled={processing === i}
                                 className={`w-full py-4 rounded-xl font-bold text-white transition shadow-lg flex items-center justify-center gap-2 relative z-10
                                     ${plan.isDiamond 
-                                        ? (isLocked ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-200') 
+                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-200'
                                         : 'bg-black hover:bg-gray-900'}
                                 `}
                             >
-                                {processing === i ? <Loader2 className="animate-spin"/> : (isLocked ? 'Switch to Yearly' : 'Choose Plan')}
+                                {processing === i ? <Loader2 className="animate-spin"/> : 'Choose Plan'}
                             </button>
                         </motion.div>
                     );

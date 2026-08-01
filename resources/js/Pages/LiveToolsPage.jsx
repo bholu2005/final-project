@@ -70,46 +70,88 @@ export default function LiveToolsPage() {
 
             {/* RESULTS GRID */}
             {result && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid md:grid-cols-2 gap-6">
-                    
-                    {/* 1. Status Card */}
-                    <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-white/50">
-                        <h3 className="font-heading text-xl mb-4 flex items-center gap-2"><Activity size={20}/> Connection Status</h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span className="text-sm font-bold text-black/60">Response Code</span>
-                                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${result.status === 200 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                    {result.status} {result.status === 200 ? 'OK' : 'Error'}
-                                </span>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {/* 1. Status Card */}
+                        <div className="bg-white p-8 rounded-[2rem] shadow-lg border border-black/5 flex flex-col justify-between">
+                            <div>
+                                <h3 className="font-heading text-2xl mb-6 flex items-center gap-2 text-black">
+                                    <Activity size={22} className="text-black" /> Connection Status
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-black/5">
+                                        <span className="text-sm font-bold text-black/60">Response Code</span>
+                                        <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${result.status === 200 ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                                            {result.status} {result.status === 200 ? 'OK' : 'Error'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-black/5">
+                                        <span className="text-sm font-bold text-black/60">SSL / HTTPS</span>
+                                        <span className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold ${result.ssl ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-orange-100 text-orange-800 border border-orange-200'}`}>
+                                            {result.ssl ? <><Lock size={12}/> Secure</> : <><Unlock size={12}/> Insecure</>}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-black/5">
+                                        <span className="text-sm font-bold text-black/60">Server Technology</span>
+                                        <span className="font-mono text-sm text-black/80">{result.server || 'Hidden/Unknown'}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span className="text-sm font-bold text-black/60">SSL / HTTPS</span>
-                                <span className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold ${result.ssl ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    {result.ssl ? <><Lock size={14}/> Secure</> : <><Unlock size={14}/> Insecure</>}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                                <span className="text-sm font-bold text-black/60">Server Technology</span>
-                                <span className="font-mono text-sm">{result.server}</span>
+                        </div>
+
+                        {/* 2. Security Headers Audit */}
+                        <div className="bg-white p-8 rounded-[2rem] shadow-lg border border-black/5">
+                            <h3 className="font-heading text-2xl mb-6 flex items-center gap-2 text-black">
+                                <Shield size={22} className="text-black" /> Security Headers Audit
+                            </h3>
+                            <div className="space-y-3">
+                                {[
+                                    { name: 'Content-Security-Policy', desc: 'Prevents XSS & data injection' },
+                                    { name: 'Strict-Transport-Security', desc: 'Enforces HTTPS connections' },
+                                    { name: 'X-Frame-Options', desc: 'Protects against clickjacking' },
+                                    { name: 'X-Content-Type-Options', desc: 'Prevents MIME-sniffing' },
+                                    { name: 'Referrer-Policy', desc: 'Controls referrer data sent' }
+                                ].map((h) => {
+                                    // Case-insensitive key check
+                                    const headerKey = Object.keys(result.headers).find(k => k.toLowerCase() === h.name.toLowerCase());
+                                    const hasHeader = !!headerKey;
+                                    return (
+                                        <div key={h.name} className="flex justify-between items-start p-3 bg-gray-50 rounded-2xl border border-black/5">
+                                            <div>
+                                                <h4 className="text-xs font-mono font-bold text-black">{h.name}</h4>
+                                                <p className="text-[10px] text-black/50">{h.desc}</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${hasHeader ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                                                {hasHeader ? 'Secure' : 'Missing'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Raw Headers */}
-                    <div className="bg-black text-white p-6 rounded-[2rem] shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                        <h3 className="font-heading text-xl mb-4 flex items-center gap-2 relative z-10"><Server size={20}/> Raw Headers</h3>
+                    {/* 3. Raw Headers (Full width Terminal style) */}
+                    <div className="bg-black text-white p-8 rounded-[2rem] shadow-2xl relative overflow-hidden border border-gray-800">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                        <div className="flex justify-between items-center mb-6 relative z-10">
+                            <h3 className="font-heading text-2xl flex items-center gap-2"><Server size={22}/> Raw Response Headers</h3>
+                            <div className="flex gap-1.5">
+                                <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                                <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                                <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                            </div>
+                        </div>
                         
-                        <div className="h-64 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent font-mono text-xs space-y-2 relative z-10">
+                        <div className="max-h-96 overflow-y-auto pr-2 font-mono text-sm space-y-3 relative z-10 bg-black/40 p-6 rounded-2xl border border-white/5 shadow-inner">
                             {Object.entries(result.headers).map(([key, value]) => (
-                                <div key={key} className="border-b border-white/10 pb-2">
-                                    <span className="text-blue-300 font-bold block mb-1">{key}</span>
-                                    <span className="text-white/70 break-all">{value}</span>
+                                <div key={key} className="flex flex-col md:flex-row md:items-start gap-1 md:gap-4 border-b border-white/5 pb-3">
+                                    <span className="text-blue-400 font-bold shrink-0 md:w-64 select-none">{key}:</span>
+                                    <span className="text-gray-300 break-all">{Array.isArray(value) ? value.join(', ') : value}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
-
                 </motion.div>
             )}
 
