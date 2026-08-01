@@ -57,6 +57,16 @@ class AdminController extends Controller
         return response()->json(Transaction::with('user')->orderBy('created_at', 'desc')->get());
     }
 
+    // --- SECURITY THREAT LOGS ---
+    public function threatLogs() {
+        return response()->json(\App\Models\SecurityLog::with('user')->orderBy('created_at', 'desc')->get());
+    }
+
+    // --- FEEDBACK LISTING ---
+    public function feedback() {
+        return response()->json(\App\Models\Feedback::with('user')->orderBy('created_at', 'desc')->get());
+    }
+
     // --- 🔥 SYSTEM SETTINGS (NEW) ---
     public function getSettings() {
         $settings = DB::table('settings')->pluck('value', 'key');

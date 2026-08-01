@@ -5,7 +5,7 @@ import {
     ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle, Download, ArrowRight, Bug, Zap, Loader2, X, Code2, Copy, FileText, Search, Eye 
 } from 'lucide-react';
 
-export default function Dashboard({ scanId }) {
+export default function Dashboard({ scanId, onNavigate }) {
     const [isLoading, setIsLoading] = useState(true);
     const [scanData, setScanData] = useState(null);
     const [error, setError] = useState(null);
@@ -132,7 +132,12 @@ export default function Dashboard({ scanId }) {
                         Ref: <span className="text-black font-bold">{scanData.scan_reference}</span>
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
+                    {onNavigate && (
+                        <button onClick={() => onNavigate('CodePatchSandbox')} className="bg-black hover:bg-gray-900 text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 transition shadow-lg">
+                            <Zap size={18} className="text-yellow-400 fill-yellow-400" /> AI Patch Sandbox
+                        </button>
+                    )}
                     <button onClick={handleDownload} className="bg-white border border-black/10 px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-gray-50 transition shadow-sm">
                         <Download size={18} /> Export PDF
                     </button>

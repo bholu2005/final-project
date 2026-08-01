@@ -87,6 +87,24 @@ export default function SettingsPage({ onNavigate }) {
                                 </div>
                                 <ChevronRight size={18} className="text-black/30 group-hover:text-black transition"/>
                             </div>
+
+                            {/* Webhook Integrations (NEW) */}
+                            <div onClick={() => onNavigate('Integrations')} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition group">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg group-hover:bg-yellow-200 transition"><Settings size={20}/></div>
+                                    <div><p className="font-bold text-sm">Webhook Alerts</p><p className="text-xs text-black/50">Slack & Discord Integrations</p></div>
+                                </div>
+                                <ChevronRight size={18} className="text-black/30 group-hover:text-black transition"/>
+                            </div>
+
+                            {/* API Playground (NEW) */}
+                            <div onClick={() => onNavigate('ApiPlayground')} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition group">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-[#dbeafe] text-indigo-600 rounded-lg group-hover:bg-indigo-200 transition"><Terminal size={20}/></div>
+                                    <div><p className="font-bold text-sm">API Playground</p><p className="text-xs text-black/50">Test Endpoints Live</p></div>
+                                </div>
+                                <ChevronRight size={18} className="text-black/30 group-hover:text-black transition"/>
+                            </div>
                         </div>
                     </div>
 

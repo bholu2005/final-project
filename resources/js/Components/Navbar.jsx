@@ -101,6 +101,22 @@ export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-3 z-50">
                         
+                        {/* Dynamic Usage Limit Indicator */}
+                        {user && (
+                            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white/75 border border-black/10 rounded-full text-xs font-bold shadow-sm">
+                                {user.plan_type === 'free' ? (
+                                    <>
+                                        <span className="text-black/60">Daily Scans:</span>
+                                        <span className="text-red-600 animate-pulse">{user.daily_scans_count ?? 0}/3</span>
+                                    </>
+                                ) : (
+                                    <span className="text-yellow-600 flex items-center gap-1.5">
+                                        <Crown size={12} className="fill-yellow-600 animate-pulse"/> {user.plan_type.toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         <button 
                             onClick={() => handleNavClick('Notifications')}
                             className="relative w-10 h-10 bg-white border border-black/10 rounded-full flex items-center justify-center hover:bg-black hover:text-white transition shadow-sm group"
