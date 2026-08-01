@@ -47,6 +47,7 @@ export default function Home() {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState('Home');
+    const [isAdminView, setIsAdminView] = useState(true);
     
     // --- 2. DATA STATES (Scanning Data) ---
     // Initialized as empty arrays/null to prevent crashes
@@ -71,6 +72,7 @@ export default function Home() {
                     // Logic: If Admin logs in, send to AdminDashboard
                     // If User logs in, send to Home
                     if (res.data.role === 'admin' && currentPage === 'Home') {
+                        setIsAdminView(true);
                         setCurrentPage('AdminDashboard');
                     }
                 } catch (err) {
@@ -90,6 +92,7 @@ export default function Home() {
         setUser(userData); 
         // Redirect based on Role
         if (userData.role === 'admin') {
+            setIsAdminView(true);
             setCurrentPage('AdminDashboard');
         } else {
             setCurrentPage('Home'); 
@@ -131,7 +134,7 @@ export default function Home() {
     // ==========================================
     // 👑 ADMIN VIEW RENDER
     // ==========================================
-    if (user && user.role === 'admin') {
+    if (user && user.role === 'admin' && isAdminView) {
         // 🔥 Logic to hide Navbar on full pages (Profile, Notifications)
         const hideAdminNav = ['AdminProfile', 'AdminNotifications'];
         const showAdminNav = !hideAdminNav.includes(currentPage);
@@ -145,6 +148,7 @@ export default function Home() {
                         onNavigate={setCurrentPage} 
                         onLogout={handleLogout} 
                         user={user} 
+                        onToggleView={() => setIsAdminView(false)}
                     />
                 )}
 
@@ -202,6 +206,7 @@ export default function Home() {
                     onNavigate={setCurrentPage} 
                     user={user} 
                     onLogout={handleLogout} 
+                    onToggleView={() => setIsAdminView(true)}
                 />
             )}
 

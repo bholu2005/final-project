@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout }) { 
+export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout, onToggleView }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [hasNotification, setHasNotification] = useState(true);
 
@@ -101,6 +101,12 @@ export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-3 z-50">
                         
+                        {user && user.role === 'admin' && onToggleView && (
+                            <button onClick={onToggleView} className="hidden sm:flex bg-red-600 text-white px-5 py-2 rounded-full font-bold text-xs md:text-sm hover:bg-red-700 transition shadow-lg items-center gap-2 animate-pulse">
+                                <span>Admin Panel</span>
+                            </button>
+                        )}
+
                         {/* Dynamic Usage Limit Indicator */}
                         {user && (
                             <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white/75 border border-black/10 rounded-full text-xs font-bold shadow-sm">
