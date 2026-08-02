@@ -1,0 +1,36 @@
+name: Merlin Security Platform CI
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup PHP Environment
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, sqlite3, pcntl, gd
+
+    - name: Install Composer Dependencies
+      run: composer install --no-interaction --prefer-dist
+
+    - name: Setup Frontend Build Environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Compile Production CSS/JS Chunks
+      run: |
+        npm install
+        npm run build
+
+    - name: Run Backend PHPUnit Test Suite
+      run: vendor/bin/phpunit
