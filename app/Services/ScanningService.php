@@ -49,6 +49,9 @@ class ScanningService
         // 3. Recursive Scan & Tree Building
         $fileTree = $this->buildTreeAndScan($extractPath, $extractPath, $issues, $score, $flatFileList, $detectedTables);
 
+        // 3b. Optional LLM-Augmented Analysis Pass
+        $this->enhanceIssuesWithAi($issues);
+
         // 4. Fallback for Animation (Agar zip empty nikli)
         if (empty($flatFileList)) {
             $flatFileList[] = [
@@ -275,5 +278,87 @@ class ScanningService
         }
 
         return $foundIssues;
+    }
+
+    /**
+     * Optional LLM-Augmentation pass using Anthropic API key to refine discovered issues.
+     */
+    private function enhanceIssuesWithAi(&$issues)
+    {
+        $apiKey = env('ANTHROPIC_API_KEY');
+        if (empty($apiKey) || empty($issues)) {
+            return;
+        }
+
+        // Limit AI enhancement to the top 3 highest-priority issues to keep execution speedy
+        $criticalOrHighIssues = array_filter($issues, function($issue) {
+            return in_array($issue['severity'] ?? '', ['Critical', 'High']);
+        });
+
+        if (empty($criticalOrHighIssues)) {
+            return;
+        }
+
+        $targets = array_slice($criticalOrHighIssues, 0, 3);
+
+        foreach ($issues as $key => $issue) {
+            // Find if this issue was selected for AI enhancement
+            $isSelected = false;
+            foreach ($targets as $target) {
+                if ($target['id'] === $issue['id']) {
+                    $isSelected = true;
+                    break;
+                }
+            }
+
+            if (!$isSelected) {
+                continue;
+            }
+
+            try {
+                $prompt = "You are Merlin Sec AI, an expert static application security testing analyzer. Refine this issue report to make it highly precise, OWASP-aligned, and secure.\n\n"
+                    . "Vulnerability Name: " . $issue['name'] . "\n"
+                    . "File Location: " . $issue['location'] . "\n"
+                    . "Line Context: " . $issue['snippet'] . "\n"
+                    . "Base Description: " . $issue['description'] . "\n\n"
+                    . "Provide your response as a JSON object with two keys:\n"
+                    . "1. 'description': A professional, concise analysis of the threat.\n"
+                    . "2. 'fix_suggestion': A production-ready code snippet remediating the issue.\n"
+                    . "Do not output any introductory or concluding text. Output ONLY valid JSON.";
+
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'content-type' => 'application/json',
+                ])->timeout(8)->post('https://api.anthropic.com/v1/messages', [
+                    'model' => 'claude-3-haiku-20240307',
+                    'max_tokens' => 500,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt]
+                    ],
+                ]);
+
+                if ($response->successful()) {
+                    $resData = $response->json();
+                    $reply = $resData['content'][0]['text'] ?? '';
+
+                    // Parse JSON output from Claude
+                    $cleanedJson = trim($reply);
+                    if (preg_match('/\{[\s\S]*\}/', $cleanedJson, $jsonMatch)) {
+                        $parsed = json_decode($jsonMatch[0], true);
+                        if ($parsed) {
+                            if (!empty($parsed['description'])) {
+                                $issues[$key]['description'] = $parsed['description'] . " (Augmented by Merlin AI)";
+                            }
+                            if (!empty($parsed['fix_suggestion'])) {
+                                $issues[$key]['fix_suggestion'] = $parsed['fix_suggestion'];
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("AI Issue enhancement failed: " . $e->getMessage());
+            }
+        }
     }
 }
