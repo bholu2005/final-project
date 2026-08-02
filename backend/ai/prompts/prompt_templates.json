@@ -1,0 +1,5 @@
+{
+  "sqli_audit": "Analyze the following database query for SQL Injection risks:\nQuery: {code}\nContext: {context}\nReturn severity, risk score, and suggested PDO parameter bind statement.",
+  "xss_audit": "Analyze the following markup output for Cross-Site Scripting (XSS) risks:\nCode: {code}\nIdentify un-sanitized outputs and return safe htmlspecialchars or DOMPurify wrappers.",
+  "jwt_audit": "Audit the following JWT token configuration block for cryptographic weaknesses:\nConfiguration: {code}\nVerify algorithm enforcement patterns and key length entropy."
+}

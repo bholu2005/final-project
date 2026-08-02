@@ -1,0 +1,11 @@
+{
+  "base_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+  "epochs": 3,
+  "learning_rate": 2e-5,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "target_modules": ["q_proj", "v_proj"],
+  "dataset_path": "training/data/sample_train_dataset.json",
+  "output_dir": "models/secured-coder-v1"
+}
