@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 // ==========================================
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
+import CookieBanner from '../Components/CookieBanner';
 
 import HeroSection from './HeroSection';
 import ScanPage from './ScanPage';
@@ -28,6 +29,7 @@ import CodePatchSandboxPage from './CodePatchSandboxPage';
 import ApiPlaygroundPage from './ApiPlaygroundPage';
 import SecurityThreatsPage from './SecurityThreatsPage';
 import IntegrationsPage from './IntegrationsPage';
+import AiAssistantPage from './AiAssistantPage';
 // ==========================================
 // 👑 ADMIN COMPONENTS & PAGES IMPORT
 // ==========================================
@@ -126,9 +128,10 @@ export default function Home() {
     // A. Show Nothing while checking auth
     if (isLoading) return null; 
     
-    // B. Show Auth Page if not logged in
-    if (!user) {
-        return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    // B. Show Auth Page if not logged in and requesting protected page
+    const guestAllowedPages = ['Home', 'Pricing'];
+    if (!user && !guestAllowedPages.includes(currentPage)) {
+        return <AuthPage onLoginSuccess={handleLoginSuccess} onBackToHome={() => setCurrentPage('Home')} />;
     }
 
     // ==========================================
@@ -186,6 +189,8 @@ export default function Home() {
                     </AnimatePresence>
                 </main>
                 
+                {/* Cookie Banner */}
+                <CookieBanner />
                 {/* No Footer for Admin */}
             </div>
         );
@@ -280,6 +285,13 @@ export default function Home() {
                             <LiveToolsPage />
                         </motion.div>
                     )}
+
+                    {/* 7b. AI SECURITY ASSISTANT */}
+                    {currentPage === 'AiAssistant' && (
+                        <motion.div key="aiAssistant" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                            <AiAssistantPage />
+                        </motion.div>
+                    )}
                     
                     {/* 8. PRICING PAGE */}
                     {currentPage === 'Pricing' && (
@@ -359,6 +371,9 @@ export default function Home() {
 
             {/* FOOTER */}
             {showNavFooter && <Footer />}
+
+            {/* Cookie Banner */}
+            <CookieBanner />
         </div>
     );
 }

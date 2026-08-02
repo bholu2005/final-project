@@ -71,7 +71,7 @@ const Label = ({ text }) => <label className="block mb-1 text-xs font-bold text-
 // 🚀 MAIN COMPONENT
 // ==========================================
 
-export default function AuthPage({ onLoginSuccess }) {
+export default function AuthPage({ onLoginSuccess, onBackToHome }) {
     const [view, setView] = useState('login'); 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -157,80 +157,98 @@ export default function AuthPage({ onLoginSuccess }) {
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#E8D5C6] flex flex-col items-center justify-start pt-16 px-4 font-body">
+        <div className="min-h-screen w-full bg-[#E8D5C6] relative flex flex-col items-center justify-start pt-12 pb-16 px-4 font-body overflow-y-auto">
             
+            {/* Decorative Ambient Background Glows */}
+            <div className="absolute top-0 left-[-10%] w-[400px] h-[400px] bg-white/20 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-black/5 rounded-full blur-[150px] pointer-events-none" />
+
+            {/* Back to Home Button */}
+            {onBackToHome && (
+                <button
+                    onClick={onBackToHome}
+                    className="absolute top-6 left-6 flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-black hover:text-white rounded-full font-bold text-xs shadow-md border border-black/5 transition duration-300 transform hover:scale-105"
+                >
+                    <ArrowRight size={14} className="rotate-180" /> Back to Home
+                </button>
+            )}
+
             {/* LOGO & BRANDING (Top Center) */}
             <motion.div 
                 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center mb-12"
+                className="flex flex-col items-center mb-8 relative z-10"
             >
-                <Hexagon size={60} className="text-black fill-black/10 mb-3 rotate-12" />
-                <h1 className="font-heading text-5xl text-black tracking-wide">Merlin</h1>
-                <p className="text-black/50 text-xs font-bold tracking-widest uppercase mt-2">Universal Security Platform</p>
+                <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/10 rotate-3 hover:rotate-0 transition-transform duration-300 mb-3 cursor-pointer">
+                    <Hexagon size={32} className="text-white fill-white/20" />
+                </div>
+                <h1 className="font-heading text-4xl text-black tracking-wide">Merlin Security</h1>
+                <p className="text-black/50 text-[10px] font-bold tracking-widest uppercase mt-1">Universal Threat Detection Engine</p>
             </motion.div>
 
             {/* ERROR / SUCCESS MESSAGES (Top) */}
-            <div className="w-full max-w-md">
-                {error && <div className="mb-6 p-4 bg-red-100/90 text-red-800 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm border border-red-200"><AlertCircle size={18}/> {error}</div>}
-                {successMsg && <div className="mb-6 p-4 bg-green-100/90 text-green-800 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm border border-green-200"><CheckCircle size={18}/> {successMsg}</div>}
+            <div className="w-full max-w-md relative z-10">
+                {error && <div className="mb-4 p-4 bg-red-100/90 text-red-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm border border-red-200"><AlertCircle size={16}/> {error}</div>}
+                {successMsg && <div className="mb-4 p-4 bg-green-100/90 text-green-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm border border-green-200"><CheckCircle size={16}/> {successMsg}</div>}
             </div>
 
             <AnimatePresence mode="wait">
                 
-                {/* ================= LOGIN FORM (NO CONTAINER) ================= */}
+                {/* ================= LOGIN FORM (ELEGANT CONTAINER) ================= */}
                 {view === 'login' && (
                     <motion.div 
                         key="login"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className="w-full max-w-[400px] text-center"
+                        className="w-full max-w-[440px] bg-white/70 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-2xl relative z-10"
                     >
-                        <h2 className="font-heading text-4xl text-black mb-1">Sign In</h2>
-                        <p className="text-black/50 text-sm mb-8">Enter your credentials to continue</p>
+                        <div className="text-center mb-8">
+                            <h2 className="font-heading text-3xl text-black mb-1">Access Terminal</h2>
+                            <p className="text-black/50 text-xs">Authorize to deploy scanning utilities</p>
+                        </div>
 
-                        <form onSubmit={handleLogin} className="space-y-6">
+                        <form onSubmit={handleLogin} className="space-y-5">
                             
                             <PillInput type="email" placeholder="Email Address" value={loginData.email} onChange={e => setLoginData({...loginData, email: e.target.value})} />
                             <PillInput type="password" placeholder="Password" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} isPass={true} showPass={showPass} togglePass={() => setShowPass(!showPass)} />
 
                             {/* Captcha */}
-                            <div className="flex items-center gap-3 pt-2">
+                            <div className="flex items-center gap-3 pt-1">
                                 <input 
                                     type="text" 
                                     placeholder="CODE" 
                                     value={captchaInput}
                                     onChange={e => setCaptchaInput(e.target.value)}
-                                    className="w-1/2 bg-white border-2 border-transparent focus:border-black text-black text-sm rounded-full py-4 px-6 text-center uppercase tracking-widest font-bold shadow-sm outline-none"
+                                    className="w-1/2 bg-white border border-transparent focus:border-black text-black text-sm rounded-full py-4 px-6 text-center uppercase tracking-widest font-bold shadow-sm outline-none transition"
                                 />
-                                <div className="flex-1 h-[54px] bg-black/5 rounded-full border border-black/5 flex items-center justify-center overflow-hidden cursor-pointer" onClick={refreshCaptcha}>
-                                    {captcha.img ? <img src={captcha.img} className="h-full object-cover opacity-60" alt="captcha"/> : <Loader2 className="animate-spin text-black/30"/>}
+                                <div className="flex-1 h-[54px] bg-black/5 rounded-full border border-black/5 flex items-center justify-center overflow-hidden cursor-pointer shadow-inner" onClick={refreshCaptcha}>
+                                    {captcha.img ? <img src={captcha.img} className="h-full object-cover opacity-60 hover:scale-105 transition duration-300" alt="captcha"/> : <Loader2 className="animate-spin text-black/30"/>}
                                 </div>
-                                <button type="button" onClick={refreshCaptcha} className="p-3 text-black/40 hover:text-black bg-white rounded-full shadow-sm hover:shadow-md transition"><RefreshCw size={20}/></button>
+                                <button type="button" onClick={refreshCaptcha} className="p-3 text-black/40 hover:text-black hover:bg-white rounded-full shadow-sm transition"><RefreshCw size={20}/></button>
                             </div>
 
-                            <button type="submit" disabled={isLoading} className="w-full bg-black text-white font-bold py-5 rounded-full text-xl shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 mt-4">
-                                {isLoading ? <Loader2 className="animate-spin"/> : <>Access Dashboard <ArrowRight size={20}/></>}
+                            <button type="submit" disabled={isLoading} className="w-full bg-black text-white font-bold py-4 rounded-full text-base shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                                {isLoading ? <Loader2 className="animate-spin"/> : <>Access Dashboard <ArrowRight size={18}/></>}
                             </button>
                         </form>
 
-                        <p className="text-center text-black/50 mt-10">
-                            New User? <button onClick={() => setView('signup')} className="text-black font-bold hover:underline ml-1">Create Account</button>
+                        <p className="text-center text-xs text-black/50 mt-8">
+                            New operator? <button onClick={() => setView('signup')} className="text-black font-bold hover:underline ml-1">Create Account</button>
                         </p>
                     </motion.div>
                 )}
 
-                {/* ================= SIGNUP FORM (NO CONTAINER - Wider Layout) ================= */}
+                {/* ================= SIGNUP FORM (ELEGANT WIDE CONTAINER) ================= */}
                 {view === 'signup' && (
                     <motion.div 
                         key="signup"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className="w-full max-w-4xl"
+                        className="w-full max-w-4xl bg-white/70 backdrop-blur-xl p-10 md:p-12 rounded-[3rem] border border-white/60 shadow-2xl relative z-10"
                     >
-                        <div className="mb-10 text-center">
-                            <h2 className="font-heading text-4xl text-black mb-2">Create Account</h2>
-                            <p className="text-black/50">Fill in the details below.</p>
+                        <div className="mb-8 text-center">
+                            <h2 className="font-heading text-3xl text-black mb-1">Create Account</h2>
+                            <p className="text-black/50 text-xs">Register your organization credentials</p>
                         </div>
 
-                        <form onSubmit={handleSignup} className="space-y-8">
+                        <form onSubmit={handleSignup} className="space-y-6">
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                                 <LineInput type="text" placeholder="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
@@ -278,14 +296,14 @@ export default function AuthPage({ onLoginSuccess }) {
                                 <p className="text-xs text-black/40 mt-2">Min 8 chars, 1 letter, 1 number, 1 symbol</p>
                             </div>
 
-                            <div className="flex justify-center mt-10">
-                                <button type="submit" disabled={isLoading} className="w-full md:w-1/2 bg-black text-white font-bold py-4 rounded-full text-lg shadow-xl transition-transform hover:scale-[1.01]">
-                                    {isLoading ? <Loader2 className="animate-spin mx-auto"/> : 'Create Account'}
+                            <div className="flex justify-center mt-8">
+                                <button type="submit" disabled={isLoading} className="w-full md:w-1/2 bg-black text-white font-bold py-4 rounded-full text-base shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99]">
+                                    {isLoading ? <Loader2 className="animate-spin mx-auto"/> : 'Deploy Account'}
                                 </button>
                             </div>
 
-                            <p className="text-center text-sm text-black/50 pb-10">
-                                Already have an account? <button type="button" onClick={() => setView('login')} className="text-black font-bold hover:underline ml-1">Login here</button>
+                            <p className="text-center text-xs text-black/50">
+                                Already registered? <button type="button" onClick={() => setView('login')} className="text-black font-bold hover:underline ml-1">Login here</button>
                             </p>
                         </form>
                     </motion.div>
