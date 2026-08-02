@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Home, LayoutDashboard, ScanSearch, FileText, Globe, 
     Hexagon, LogIn, LogOut, User, Menu, X, Bell, Settings, 
-    Crown, UserCircle, LifeBuoy, CreditCard, Activity // 🔥 Activity Icon for Monitor
+    Crown, UserCircle, LifeBuoy, CreditCard, Activity, Sparkles // 🔥 Sparkles Icon added
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,7 +14,8 @@ export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout
         { id: 'Home', icon: Home, label: 'Home' },
         { id: 'Dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { id: 'Scan', icon: ScanSearch, label: 'New Scan' },
-        { id: 'Monitor', icon: Activity, label: 'Monitor' }, // 🔥 NEW OPTION ADDED
+        { id: 'AiAssistant', icon: Sparkles, label: 'Try AI' }, // 🔥 DEDICATED CHATBOT
+        { id: 'Monitor', icon: Activity, label: 'Monitor' },
         { id: 'Reports', icon: FileText, label: 'Reports' },
         { id: 'Live', icon: Globe, label: 'Live Tools' },
         { id: 'Pricing', icon: Crown, label: 'Upgrade' }, 
@@ -79,7 +80,10 @@ export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout
                                         />
                                     )}
                                     <div className="relative z-10 flex items-center gap-2 px-2">
-                                        <item.icon size={20} strokeWidth={2} className={item.id === 'Pricing' && !isActive ? 'text-yellow-500' : ''} />
+                                        <item.icon size={20} strokeWidth={2} className={
+                                            item.id === 'Pricing' && !isActive ? 'text-yellow-500' :
+                                            item.id === 'AiAssistant' && !isActive ? 'text-purple-500 animate-pulse' : ''
+                                        } />
                                         <AnimatePresence>
                                             {isActive && (
                                                 <motion.span 
