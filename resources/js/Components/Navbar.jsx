@@ -8,9 +8,14 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout, onToggleView }) {
+export default function Navbar({ activePage = 'Home', onNavigate, user, onLogout, onToggleView, isCollapsed: externalCollapsed, onCollapseChange }) {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsedInternal, setIsCollapsedInternal] = useState(false);
+    const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : isCollapsedInternal;
+    const setIsCollapsed = (val) => {
+        setIsCollapsedInternal(val);
+        if (onCollapseChange) onCollapseChange(val);
+    };
     const [scansHistory, setScansHistory] = useState([]);
     const [isDark, setIsDark] = useState(false);
 

@@ -50,6 +50,7 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState('Home');
     const [isAdminView, setIsAdminView] = useState(true);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     
     // --- 2. DATA STATES (Scanning Data) ---
     // Initialized as empty arrays/null to prevent crashes
@@ -218,11 +219,13 @@ export default function Home() {
                         setIsAdminView(true);
                         setCurrentPage('AdminDashboard');
                     }}
+                    isCollapsed={isSidebarCollapsed}
+                    onCollapseChange={setIsSidebarCollapsed}
                 />
             )}
 
             {/* DYNAMIC CONTENT AREA */}
-            <main className={`min-h-screen transition-all duration-300 ${showNavFooter && currentPage !== 'Home' && currentPage !== 'Scanning' ? 'lg:pl-72' : ''}`}>
+            <main className={`min-h-screen transition-all duration-300 ${showNavFooter && currentPage !== 'Home' && currentPage !== 'Scanning' ? (isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72') : ''}`}>
                 <AnimatePresence mode="wait">
                     
                     {/* 1. HOME PAGE */}
@@ -370,7 +373,7 @@ export default function Home() {
             </main>
 
             {/* FOOTER */}
-            {showNavFooter && <Footer />}
+            {currentPage === 'Home' && <Footer />}
 
             {/* Cookie Banner */}
             <CookieBanner />

@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\ApiKeyController;
 use App\Http\Controllers\Api\ToolController;
 use App\Http\Controllers\Api\TeamController; // 🔥 Team Controller Added
+use App\Http\Controllers\Api\AiAssistantController;
 
 /*
 |--------------------------------------------------------------------------
@@ -142,6 +143,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/monitor/add', [MonitorController::class, 'store']);
     Route::delete('/monitor/{id}', [MonitorController::class, 'destroy']);
     Route::post('/monitor/{id}/run', [MonitorController::class, 'runNow']);
+
+    // --- AI Chat Assistant ---
+    Route::post('/ai/chat', [AiAssistantController::class, 'chat']);
 
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

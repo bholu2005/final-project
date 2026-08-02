@@ -4,6 +4,7 @@ import {
     Send, Sparkles, ShieldCheck, Code2, RefreshCw, ChevronRight,
     Hexagon, Sun, Moon, Copy, CheckCircle, Terminal, HelpCircle, User
 } from 'lucide-react';
+import axios from 'axios';
 
 export default function AiAssistantPage() {
     const [messages, setMessages] = useState([
@@ -59,7 +60,7 @@ export default function AiAssistantPage() {
         }
     };
 
-    const handleSend = (textToSend) => {
+    const handleSend = async (textToSend) => {
         if (!textToSend.trim()) return;
 
         const userMsg = {
@@ -72,8 +73,38 @@ export default function AiAssistantPage() {
         setInputValue('');
         setIsTyping(true);
 
-        // Simulation thinking delay with elegant pulsing dots
-        setTimeout(() => {
+        try {
+            const token = sessionStorage.getItem('auth_token');
+            const res = await axios.post('http://127.0.0.1:8000/api/ai/chat', {
+                message: textToSend,
+                history: messages
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.data && res.data.success) {
+                const replyText = res.data.reply;
+                let parsedText = replyText;
+                let codeSegment = null;
+
+                const codeBlockRegex = /```[\s\S]*?\n([\s\S]*?)```/m;
+                const match = replyText.match(codeBlockRegex);
+                if (match) {
+                    codeSegment = match[1];
+                    parsedText = replyText.replace(codeBlockRegex, '(Secure code remediation block displayed below)');
+                }
+
+                setMessages(prev => [...prev, {
+                    sender: 'bot',
+                    text: parsedText,
+                    code: codeSegment,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+            } else {
+                throw new Error("Invalid response status");
+            }
+        } catch (e) {
+            console.error("AI Assistant request error, using simulation fallback: ", e);
             const botResponse = generateResponse(textToSend);
             setMessages(prev => [...prev, {
                 sender: 'bot',
@@ -81,8 +112,9 @@ export default function AiAssistantPage() {
                 code: botResponse.code,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
+        }
     };
 
     const copyToClipboard = (code, index) => {
