@@ -222,7 +222,7 @@ export default function Home() {
             )}
 
             {/* DYNAMIC CONTENT AREA */}
-            <main className="min-h-screen">
+            <main className={`min-h-screen transition-all duration-300 ${showNavFooter && currentPage !== 'Home' && currentPage !== 'Scanning' ? 'lg:pl-72' : ''}`}>
                 <AnimatePresence mode="wait">
                     
                     {/* 1. HOME PAGE */}
