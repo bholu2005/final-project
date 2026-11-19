@@ -8,20 +8,21 @@ datasource db {
 }
 
 model DebugJob {
-  id          String   @id @default(cuid())
-  status      String   @default("queued")
-  prompt      String   @db.Text
-  result      String?  @db.Text
-  errorCode   String?
-  provider    String
-  model       String
-  attempts    Int      @default(0)
-  lockedAt    DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  completedAt DateTime?
+  id            String   @id @default(cuid())
+  status        String   @default("queued")
+  prompt        String   @db.Text
+  result        String?  @db.Text
+  errorCode     String?
+  provider      String
+  model         String
+  attempts      Int      @default(0)
+  lockedAt      DateTime?
+  nextAttemptAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
 
-  @@index([status, createdAt])
+  @@index([status, nextAttemptAt, createdAt])
   @@index([createdAt])
 }
 
