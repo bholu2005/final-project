@@ -1,322 +1,207 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-    Send, Sparkles, ShieldCheck, Code2, RefreshCw, ChevronRight,
-    Hexagon, Sun, Moon, Copy, CheckCircle, Terminal, HelpCircle, User
+    AlertCircle, Check, ChevronRight, Code2, Copy, Hexagon, Moon,
+    Send, ShieldCheck, Sun, Terminal, User, WandSparkles
 } from 'lucide-react';
 import axios from 'axios';
 
+const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+const starterMessage = {
+    sender: 'bot',
+    text: "Hi, I’m Merlin. Describe what is going wrong and I’ll help trace the likely cause. I can review code, errors, failing tests, security concerns, and UI issues such as buttons or forms that do not work. I’ll distinguish evidence from guesses and suggest ways to verify a fix.",
+    time: now(),
+};
+
+function splitCodeBlock(reply) {
+    const match = reply.match(/```([^\n`]*)\n([\s\S]*?)```/);
+    if (!match) return { text: reply, code: null, language: '' };
+    return {
+        text: `${reply.slice(0, match.index)}${reply.slice(match.index + match[0].length)}`.trim(),
+        code: match[2].trim(),
+        language: match[1].trim(),
+    };
+}
+
 export default function AiAssistantPage() {
-    const [messages, setMessages] = useState([
-        {
-            sender: 'bot',
-            text: "Welcome to Merlin Security Intelligence! I am your real-time secure-coding partner. Paste your function blocks, API configs, or query strings to launch instant sandboxed vulnerability audits and get OWASP-aligned patches. What are we auditing today?",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-    ]);
+    const [messages, setMessages] = useState([starterMessage]);
     const [inputValue, setInputValue] = useState('');
+    const [code, setCode] = useState('');
+    const [errorText, setErrorText] = useState('');
+    const [expected, setExpected] = useState('');
+    const [language, setLanguage] = useState('');
+    const [showContext, setShowContext] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
-    const [isDark, setIsDark] = useState(true); // Toggleable Dark Theme Master Mode
+    const [isDark, setIsDark] = useState(true);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [requestError, setRequestError] = useState('');
     const messagesEndRef = useRef(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
     useEffect(() => {
-        scrollToBottom();
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
-    const samplePrompts = [
-        { label: "Check SQL Injection risk", text: "Is this PHP database query secure: $db->query('SELECT * FROM accounts WHERE id = ' . $_GET['id']);" },
-        { label: "Audit React InnerHTML", text: "How can I prevent potential script injection vulnerabilities when using dangerouslySetInnerHTML in React?" },
-        { label: "Verify JWT Algorithm", text: "What are the security concerns with using the 'none' algorithm or weak symmetric keys in JSON Web Tokens?" }
+    const examples = [
+        { label: 'Debug an error', text: 'Help me find the root cause of this error and suggest a minimal fix.' },
+        { label: 'Broken UI button', text: 'This button does not work. Help me identify likely causes and how to verify the fix.' },
+        { label: 'Review security', text: 'Review the supplied code for security risks and explain the evidence and safe fixes.' },
     ];
 
-    const generateResponse = (input) => {
-        const query = input.toLowerCase();
+    const handleSend = async (text = inputValue) => {
+        const message = text.trim();
+        if (!message || isTyping) return;
 
-        if (query.includes('select') || query.includes('sqli') || query.includes('query') || query.includes('database')) {
-            return {
-                text: "🚨 CRITICAL RISK REPORT: SQL Injection Vulnerability detected.\n\nYour query directly concatenates a user-controlled parameter ($_GET['id']) into the SQL string without sanitation or pre-compilation. This permits attackers to escape the statement boundaries and manipulate the query backend (e.g. bypass authentication, dump databases, or drop tables).\n\n=== REMEDIATION PATCH ===\nUse safe parameterized PDO prepared statements:",
-                code: "<?php\n// Establish parameterized binding to isolate variables from command semantics\n$stmt = $pdo->prepare('SELECT * FROM accounts WHERE id = :id');\n$stmt->execute(['id' => $_GET['id']]);\n$account = $stmt->fetch();"
-            };
-        } else if (query.includes('innerhtml') || query.includes('react') || query.includes('xss') || query.includes('script')) {
-            return {
-                text: "🛡️ THREAT VECTOR ANALYSIS: Cross-Site Scripting (XSS).\n\nRendering un-sanitized user content via dangerouslySetInnerHTML in React bypasses virtual DOM safety mechanisms and directly evaluates script payloads in the user's browser context.\n\n=== REMEDIATION PATCH ===\nUse DOMPurify to clean and authorize content safe tags before mounting:",
-                code: "import DOMPurify from 'dompurify';\n\nfunction SafeContent({ userContentHtml }) {\n  // Eliminate unauthorized tags like <script> or event triggers like onload\n  const safeHtml = DOMPurify.sanitize(userContentHtml);\n  return <div dangerouslySetInnerHTML={{ __html: safeHtml }} />;\n}"
-            };
-        } else if (query.includes('jwt') || query.includes('token') || query.includes('none') || query.includes('auth')) {
-            return {
-                text: "🔑 CRYPTOGRAPHIC RISK REPORT: Insecure JWT signature verification.\n\nAllowing the 'none' algorithm inside JWT header evaluations permits signature spoofing. Attackers can modify their token payload (such as upgrading privileges to admin) and sign it with 'none', which standard libraries without algorithm enforcement will accept.\n\n=== REMEDIATION PATCH ===\nEnforce algorithm selection explicitly and utilize public-key RSA signing:",
-                code: "use Firebase\\JWT\\JWT;\nuse Firebase\\JWT\\Key;\n\n// Explicitly enforce asymmetric algorithm (RS256) signature validation\n$decoded = JWT::decode($jwt, new Key($publicKey, 'RS256'));"
-            };
-        } else {
-            return {
-                text: "🔍 MERLIN SAST SYSTEM EVALUATION:\n\nNo high-severity vulnerabilities matched in this specific block against OWASP Top 10 patterns. \n\nGeneral Recommendations:\n1. Maintain absolute isolation of untrusted input metrics.\n2. Apply context-aware sanitization on outputs.\n3. Verify that database calls do not use direct query string interpolations.\n\nProvide another function block to execute another real-time sandbox audit!",
-                code: null
-            };
-        }
-    };
+        const userMessage = { sender: 'user', text: message, time: now() };
+        const history = messages
+            .filter((item) => item !== starterMessage)
+            .slice(-10)
+            .map(({ sender, text: historyText }) => ({ sender, text: historyText }));
 
-    const handleSend = async (textToSend) => {
-        if (!textToSend.trim()) return;
-
-        const userMsg = {
-            sender: 'user',
-            text: textToSend,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setMessages(prev => [...prev, userMsg]);
+        setMessages((current) => [...current, userMessage]);
         setInputValue('');
+        setRequestError('');
         setIsTyping(true);
 
         try {
             const token = sessionStorage.getItem('auth_token');
-            const res = await axios.post('http://127.0.0.1:8000/api/ai/chat', {
-                message: textToSend,
-                history: messages
+            const response = await axios.post('/api/ai/chat', {
+                message,
+                code: code.trim() || undefined,
+                error: errorText.trim() || undefined,
+                expected: expected.trim() || undefined,
+                language: language.trim() || undefined,
+                history,
             }, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                timeout: 70000,
             });
 
-            if (res.data && res.data.success) {
-                const replyText = res.data.reply;
-                let parsedText = replyText;
-                let codeSegment = null;
-
-                const codeBlockRegex = /```[\s\S]*?\n([\s\S]*?)```/m;
-                const match = replyText.match(codeBlockRegex);
-                if (match) {
-                    codeSegment = match[1];
-                    parsedText = replyText.replace(codeBlockRegex, '(Secure code remediation block displayed below)');
-                }
-
-                setMessages(prev => [...prev, {
-                    sender: 'bot',
-                    text: parsedText,
-                    code: codeSegment,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }]);
-            } else {
-                throw new Error("Invalid response status");
+            if (!response.data?.success || typeof response.data.reply !== 'string') {
+                throw new Error(response.data?.message || 'The AI service returned an invalid response.');
             }
-        } catch (e) {
-            console.error("AI Assistant request error, using simulation fallback: ", e);
-            const botResponse = generateResponse(textToSend);
-            setMessages(prev => [...prev, {
+
+            const result = splitCodeBlock(response.data.reply);
+            setMessages((current) => [...current, {
                 sender: 'bot',
-                text: botResponse.text,
-                code: botResponse.code,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                ...result,
+                provider: response.data.provider,
+                model: response.data.model,
+                time: now(),
             }]);
+        } catch (error) {
+            const messageText = error.response?.data?.message
+                || (error.response?.status === 401
+                    ? 'Please sign in again to use the debugging assistant.'
+                    : 'Could not reach the AI debugging service. Check your connection and server configuration, then try again.');
+            setRequestError(messageText);
         } finally {
             setIsTyping(false);
         }
     };
 
-    const copyToClipboard = (code, index) => {
-        navigator.clipboard.writeText(code);
-        setCopiedIndex(index);
-        setTimeout(() => setCopiedIndex(null), 2000);
+    const copyToClipboard = async (value, index) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopiedIndex(index);
+            window.setTimeout(() => setCopiedIndex(null), 1800);
+        } catch {
+            setRequestError('Clipboard access is unavailable in this browser.');
+        }
     };
 
+    const surface = isDark ? 'bg-[#15171e] border-white/5 text-gray-200' : 'bg-white border-black/5 text-gray-900';
+
     return (
-        <div className={`min-h-screen font-body transition-colors duration-300 flex flex-col items-center justify-start pt-24 pb-12 px-4 md:px-8
-            ${isDark ? 'bg-[#0b0c10] text-gray-200' : 'bg-[#FDFBF7] text-black'}
-        `}>
-            {/* Top Toolbar / Header */}
-            <div className="w-full max-w-5xl flex justify-between items-center mb-6 shrink-0">
+        <div className={`min-h-screen font-body transition-colors duration-300 flex flex-col items-center justify-start pt-24 pb-12 px-4 md:px-8 ${isDark ? 'bg-[#0b0c10] text-gray-200' : 'bg-[#FDFBF7] text-black'}`}>
+            <div className="w-full max-w-6xl flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border transition duration-300
-                        ${isDark ? 'bg-white text-black border-white/10' : 'bg-black text-white border-black/10'}
-                    `}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${isDark ? 'bg-white text-black border-white/10' : 'bg-black text-white border-black/10'}`}>
                         <Hexagon size={20} className="fill-current" />
                     </div>
                     <div>
-                        <h2 className="font-heading text-xl font-bold tracking-wide">Merlin SecGuard</h2>
-                        <p className="text-[10px] font-bold text-purple-500 uppercase tracking-widest animate-pulse">Advanced AI Sandbox</p>
+                        <h2 className="font-heading text-xl font-bold tracking-wide">Merlin Debugger</h2>
+                        <p className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">AI-assisted debugging · evidence first</p>
                     </div>
                 </div>
-
-                {/* Theme Toggle Button */}
-                <button
-                    onClick={() => setIsDark(!isDark)}
-                    className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition shadow-sm
-                        ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-black/5 border-black/10 text-black hover:bg-black/10'}
-                    `}
-                >
-                    {isDark ? <Sun size={14} className="text-yellow-400"/> : <Moon size={14} className="text-purple-600"/>}
-                    {isDark ? "Light Mode" : "Dark Mode"}
+                <button type="button" onClick={() => setIsDark((value) => !value)} className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-black/5 border-black/10 text-black'}`}>
+                    {isDark ? <Sun size={14} className="text-yellow-400" /> : <Moon size={14} className="text-purple-600" />}
+                    {isDark ? 'Light Mode' : 'Dark Mode'}
                 </button>
             </div>
 
-            {/* Chat Screen Workspace */}
-            <div className="w-full max-w-5xl grid lg:grid-cols-12 gap-6 items-stretch flex-grow h-[720px] max-h-[80vh]">
-
-                {/* Left Panel: sample prompts & security info */}
-                <div className="lg:col-span-3 flex flex-col gap-4">
-
-                    {/* Security sample cues */}
-                    <div className={`p-6 rounded-[2rem] border transition shadow-lg flex flex-col gap-4
-                        ${isDark ? 'bg-[#15171e] border-white/5' : 'bg-white border-black/5'}
-                    `}>
-                        <h4 className="font-heading text-lg font-bold">Threat Scenarios</h4>
-                        <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-black/50'}`}>
-                            Select a scenario payload to execute a sandboxed threat evaluation simulation.
-                        </p>
-
+            <div className="w-full max-w-6xl grid lg:grid-cols-12 gap-5 items-stretch flex-grow min-h-[680px] max-h-[82vh]">
+                <aside className="lg:col-span-3 flex flex-col gap-4">
+                    <section className={`p-5 rounded-3xl border shadow-lg ${surface}`}>
+                        <h3 className="font-heading text-base font-bold mb-1">Start with a scenario</h3>
+                        <p className="text-xs opacity-70 mb-4">Examples are prompts, not simulated results.</p>
                         <div className="flex flex-col gap-2">
-                            {samplePrompts.map((p, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => handleSend(p.text)}
-                                    className={`p-3 border rounded-2xl text-left transition duration-300 flex justify-between items-center group
-                                        ${isDark
-                                            ? 'bg-white/2 border-white/5 hover:border-white/20 hover:bg-white/5'
-                                            : 'bg-gray-50 border-black/5 hover:border-black/20 hover:bg-gray-100'}
-                                    `}
-                                >
-                                    <span className="text-[11px] font-bold truncate max-w-[180px]">{p.label}</span>
-                                    <ChevronRight size={12} className="text-gray-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                            {examples.map((example) => (
+                                <button key={example.label} type="button" onClick={() => handleSend(example.text)} disabled={isTyping} className={`p-3 border rounded-2xl text-left flex justify-between items-center group disabled:opacity-50 ${isDark ? 'bg-white/[0.02] border-white/5 hover:bg-white/5' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}>
+                                    <span className="text-[11px] font-bold">{example.label}</span>
+                                    <ChevronRight size={13} className="opacity-50 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </section>
+                    <section className={`p-5 rounded-3xl border shadow-lg flex-grow ${isDark ? 'bg-gradient-to-br from-[#121216] to-[#1a1a24] border-white/5 text-white' : 'bg-black text-white border-black/5'}`}>
+                        <h3 className="font-heading text-base text-purple-300 flex items-center gap-2 mb-2"><ShieldCheck size={17} /> How it works</h3>
+                        <p className="text-xs leading-relaxed text-gray-300">The configured AI model analyzes the context you submit and returns a fresh response. It does not execute your code or inspect your live website. Share relevant files, browser console errors, steps to reproduce, and expected behavior for a more useful diagnosis.</p>
+                        <p className="text-[10px] text-gray-400 mt-4">Review suggested changes and run your own tests before deploying.</p>
+                    </section>
+                </aside>
 
-                    {/* Security telemetry parameters card */}
-                    <div className={`p-6 rounded-[2rem] border transition shadow-lg flex-grow flex flex-col justify-between relative overflow-hidden
-                        ${isDark ? 'bg-gradient-to-br from-[#121216] to-[#1a1a24] border-white/5 text-white' : 'bg-black text-white border-black/5'}
-                    `}>
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-                        <div>
-                            <h4 className="font-heading text-lg text-purple-400 flex items-center gap-1.5 mb-2">
-                                <ShieldCheck size={18} className="text-purple-400" /> Compliance Audit
-                            </h4>
-                            <p className="text-[11px] leading-relaxed text-gray-300">
-                                This engine dynamically verifies execution paths against major security controls (OWASP Top 10, CWE-20, and SANS-25) to provide production-ready secure remediations instantly.
-                            </p>
-                        </div>
-                        <span className="text-[10px] font-mono text-purple-400 block pt-4">Sandbox Engine 2.4</span>
-                    </div>
-
-                </div>
-
-                {/* Right Panel: Chat Log canvas */}
-                <div className={`lg:col-span-9 flex flex-col rounded-[2.5rem] border shadow-2xl overflow-hidden h-full
-                    ${isDark ? 'bg-[#121319] border-white/5' : 'bg-white border-black/5'}
-                `}>
-
-                    {/* Messages window */}
-                    <div className={`flex-grow p-6 overflow-y-auto space-y-6
-                        ${isDark ? 'bg-[#15161d]/50' : 'bg-gray-50/40'}
-                    `}>
-                        {messages.map((m, idx) => {
-                            const isBot = m.sender === 'bot';
+                <main className={`lg:col-span-9 flex flex-col rounded-[2rem] border shadow-2xl overflow-hidden min-h-0 ${isDark ? 'bg-[#121319] border-white/5' : 'bg-white border-black/5'}`}>
+                    <div className={`flex-grow p-5 md:p-7 overflow-y-auto space-y-5 ${isDark ? 'bg-[#15161d]/50' : 'bg-gray-50/40'}`}>
+                        {messages.map((item, index) => {
+                            const isBot = item.sender === 'bot';
                             return (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    className={`flex gap-4 max-w-[90%] ${isBot ? 'mr-auto items-start' : 'ml-auto flex-row-reverse items-start'}`}
-                                >
-                                    {/* Brand Logo Hexagon on bot response, User icon on user */}
-                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-md transition
-                                        ${isBot
-                                            ? (isDark ? 'bg-white text-black border-white/10' : 'bg-black text-white border-black/10')
-                                            : 'bg-purple-600 text-white border-purple-500'}
-                                    `}>
-                                        {isBot ? <Hexagon size={16} className="fill-current" /> : <User size={16}/>}
+                                <motion.div key={`${index}-${item.time}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex gap-3 max-w-[94%] ${isBot ? 'mr-auto items-start' : 'ml-auto flex-row-reverse items-start'}`}>
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${isBot ? (isDark ? 'bg-white text-black border-white/10' : 'bg-black text-white border-black/10') : 'bg-purple-600 text-white border-purple-500'}`}>
+                                        {isBot ? <Hexagon size={16} className="fill-current" /> : <User size={16} />}
                                     </div>
-
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className={`p-4 rounded-3xl text-sm leading-relaxed shadow-sm
-                                            ${isBot
-                                                ? (isDark ? 'bg-[#1c1d26] text-gray-200 border border-white/5 rounded-tl-none' : 'bg-white text-black border border-black/5 rounded-tl-none')
-                                                : 'bg-purple-600 text-white rounded-tr-none'}
-                                        `}>
-                                            <p className="whitespace-pre-wrap font-sans text-xs sm:text-sm">{m.text}</p>
-
-                                            {/* Beautiful secure coding block inside the response layout */}
-                                            {m.code && (
-                                                <div className="mt-4 bg-[#1e1e24] p-4 rounded-2xl border border-white/10 overflow-x-auto shadow-inner text-xs font-mono text-gray-300">
-                                                    <div className="flex justify-between items-center pb-2 border-b border-white/5 mb-3 text-[10px] text-white/40 font-bold uppercase tracking-wider">
-                                                        <span><Terminal size={10} className="inline mr-1 text-purple-400" /> secure_patch.php</span>
-                                                        <button
-                                                            onClick={() => copyToClipboard(m.code, idx)}
-                                                            className="hover:text-white transition flex items-center gap-1"
-                                                        >
-                                                            {copiedIndex === idx ? <CheckCircle size={10} className="text-green-400"/> : <Copy size={10} />}
-                                                            {copiedIndex === idx ? "Copied" : "Copy"}
-                                                        </button>
-                                                    </div>
-                                                    <pre className="whitespace-pre">{m.code}</pre>
+                                    <div className="flex flex-col gap-1.5 min-w-0">
+                                        <div className={`p-4 rounded-3xl text-sm leading-relaxed shadow-sm ${isBot ? (isDark ? 'bg-[#1c1d26] text-gray-200 border border-white/5 rounded-tl-none' : 'bg-white text-black border border-black/5 rounded-tl-none') : 'bg-purple-600 text-white rounded-tr-none'}`}>
+                                            {item.text && <p className="whitespace-pre-wrap text-xs sm:text-sm">{item.text}</p>}
+                                            {item.code && <div className="mt-3 bg-[#1e1e24] p-4 rounded-2xl border border-white/10 overflow-x-auto text-xs font-mono text-gray-300">
+                                                <div className="flex justify-between items-center pb-2 border-b border-white/5 mb-3 text-[10px] text-white/50 uppercase tracking-wide">
+                                                    <span><Terminal size={11} className="inline mr-1 text-purple-400" />{item.language || 'suggested fix'}</span>
+                                                    <button type="button" onClick={() => copyToClipboard(item.code, index)} className="hover:text-white flex items-center gap-1">{copiedIndex === index ? <Check size={11} /> : <Copy size={11} />}{copiedIndex === index ? 'Copied' : 'Copy'}</button>
                                                 </div>
-                                            )}
+                                                <pre className="whitespace-pre-wrap">{item.code}</pre>
+                                            </div>}
+                                            {isBot && item.provider && <p className="mt-3 text-[9px] opacity-40">Generated by {item.provider}{item.model ? ` · ${item.model}` : ''}</p>}
                                         </div>
-                                        <span className={`text-[9px] text-gray-500 font-bold ${isBot ? 'text-left' : 'text-right'}`}>{m.time}</span>
+                                        <span className={`text-[9px] text-gray-500 font-bold ${isBot ? 'text-left' : 'text-right'}`}>{item.time}</span>
                                     </div>
                                 </motion.div>
                             );
                         })}
-
-                        {/* Beautiful active typing dots indicator (like premium AI chatbots!) */}
-                        {isTyping && (
-                            <div className="flex gap-4 items-start mr-auto">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-md
-                                    ${isDark ? 'bg-white text-black border-white/10' : 'bg-black text-white border-black/10'}
-                                `}>
-                                    <Hexagon size={16} className="fill-current animate-spin-slow" />
-                                </div>
-                                <div className={`p-4 rounded-3xl rounded-tl-none shadow-sm flex items-center gap-3 text-xs
-                                    ${isDark ? 'bg-[#1c1d26] text-gray-400 border border-white/5' : 'bg-white text-black/60 border border-black/5'}
-                                `}>
-                                    <span>SecGuard is analyzing payload tokens</span>
-                                    {/* Pulsing Dots */}
-                                    <div className="flex gap-1.5 items-center">
-                                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {isTyping && <div className="flex gap-3 items-center text-xs text-gray-400"><WandSparkles size={16} className="text-purple-400 animate-pulse" /> Merlin is analyzing the details…</div>}
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Chat input box */}
-                    <form
-                        onSubmit={(e) => { e.preventDefault(); handleSend(inputValue); }}
-                        className={`p-4 border-t flex gap-3 items-center shrink-0
-                            ${isDark ? 'bg-[#15161d] border-white/5' : 'bg-white border-black/5'}
-                        `}
-                    >
-                        <input
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            placeholder="Paste SQL string, function block, or ask securely..."
-                            className={`flex-grow p-4 rounded-2xl outline-none transition text-xs sm:text-sm font-body shadow-inner border
-                                ${isDark
-                                    ? 'bg-[#1c1d26] text-white border-white/5 focus:border-purple-500/50'
-                                    : 'bg-gray-50 text-black border-black/5 focus:border-black'}
-                            `}
-                        />
-                        <button
-                            type="submit"
-                            className="bg-purple-600 hover:scale-105 active:scale-95 transition text-white w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
-                        >
-                            <Send size={16} />
-                        </button>
-                    </form>
-
-                </div>
-
+                    <div className={`p-4 border-t shrink-0 ${isDark ? 'bg-[#15161d] border-white/5' : 'bg-white border-black/5'}`}>
+                        {requestError && <div role="alert" className="mb-3 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300"><AlertCircle size={15} className="shrink-0" />{requestError}</div>}
+                        <form onSubmit={(event) => { event.preventDefault(); handleSend(); }} className="space-y-3">
+                            {showContext && <div className="grid md:grid-cols-2 gap-3">
+                                <input value={language} onChange={(event) => setLanguage(event.target.value)} placeholder="Language / framework (e.g. React, PHP)" className={`rounded-xl border p-3 text-xs outline-none ${isDark ? 'bg-[#1c1d26] border-white/10 text-white' : 'bg-gray-50 border-black/10 text-black'}`} />
+                                <input value={expected} onChange={(event) => setExpected(event.target.value)} placeholder="What should happen?" className={`rounded-xl border p-3 text-xs outline-none ${isDark ? 'bg-[#1c1d26] border-white/10 text-white' : 'bg-gray-50 border-black/10 text-black'}`} />
+                                <textarea value={errorText} onChange={(event) => setErrorText(event.target.value)} rows={3} placeholder="Error message, stack trace, or browser console output" className={`rounded-xl border p-3 text-xs outline-none md:col-span-2 ${isDark ? 'bg-[#1c1d26] border-white/10 text-white' : 'bg-gray-50 border-black/10 text-black'}`} />
+                                <textarea value={code} onChange={(event) => setCode(event.target.value)} rows={5} placeholder="Relevant code (optional). Remove passwords, API keys, and personal data first." className={`rounded-xl border p-3 text-xs font-mono outline-none md:col-span-2 ${isDark ? 'bg-[#1c1d26] border-white/10 text-white' : 'bg-gray-50 border-black/10 text-black'}`} />
+                            </div>}
+                            <div className="flex gap-2 items-end">
+                                <button type="button" onClick={() => setShowContext((value) => !value)} className={`shrink-0 p-3 rounded-xl border flex items-center gap-2 text-xs ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'}`} aria-expanded={showContext}>
+                                    <Code2 size={15} />{showContext ? 'Hide details' : 'Add code / error'}
+                                </button>
+                                <textarea value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSend(); } }} rows={2} maxLength={6000} placeholder="Describe the bug, steps to reproduce, or ask a debugging question…" className={`flex-grow resize-y min-h-[48px] max-h-40 p-3 rounded-xl outline-none border text-xs sm:text-sm ${isDark ? 'bg-[#1c1d26] text-white border-white/10 focus:border-purple-500/60' : 'bg-gray-50 text-black border-black/10 focus:border-black'}`} />
+                                <button type="submit" disabled={isTyping || !inputValue.trim()} aria-label="Send debugging request" className="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 transition text-white w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg"><Send size={16} /></button>
+                            </div>
+                            <p className="text-[10px] text-gray-500">Do not paste secrets. AI suggestions can be wrong; inspect changes and verify with tests.</p>
+                        </form>
+                    </div>
+                </main>
             </div>
-
         </div>
     );
 }
