@@ -1,8 +1,18 @@
-FROM node:22-alpine
+FROM node:22-alpine AS deps
 WORKDIR /app
-ENV NODE_ENV=production
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public"
 COPY next-app/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
-COPY next-app/ ./
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup -S worker && adduser -S worker -G worker
+COPY --from=deps --chown=worker:worker /app/node_modules ./node_modules
+COPY --chown=worker:worker next-app/package.json ./package.json
+COPY --chown=worker:worker next-app/prisma ./prisma
+COPY --chown=worker:worker next-app/src ./src
+COPY --chown=worker:worker next-app/tsconfig.json ./tsconfig.json
+USER worker
 RUN npx prisma generate
 CMD ["npm", "run", "worker"]

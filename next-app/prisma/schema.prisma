@@ -15,6 +15,7 @@ model DebugJob {
   errorCode     String?
   provider      String
   model         String
+  pollTokenHash String
   attempts      Int      @default(0)
   lockedAt      DateTime?
   nextAttemptAt DateTime @default(now())

@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 
 type Job = { id: string; status: string; result?: string | null; errorCode?: string | null };
+type PendingJob = { id: string; token: string };
+const storageKey = 'merlin.pending-job';
 
 export default function Home() {
   const [message, setMessage] = useState('');
@@ -14,17 +16,31 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  async function poll(jobId: string) {
+  useEffect(() => {
+    const saved = sessionStorage.getItem(storageKey);
+    if (!saved) return;
     try {
-      const response = await fetch(`/api/debug/${jobId}`, { cache: 'no-store' });
+      const pending = JSON.parse(saved) as PendingJob;
+      if (pending.id && pending.token) {
+        setBusy(true);
+        void poll(pending);
+      }
+    } catch { sessionStorage.removeItem(storageKey); }
+    return () => { if (timer.current) clearTimeout(timer.current); };
+  // poll is deliberately stable for the component lifetime.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function poll(pending: PendingJob) {
+    try {
+      const response = await fetch(`/api/debug/${pending.id}`, { cache: 'no-store', headers: { 'x-job-token': pending.token } });
       if (!response.ok) throw new Error('Status unavailable');
       const current = await response.json() as Job;
       setJob(current);
-      if (current.status === 'queued' || current.status === 'processing' || current.status === 'retrying') {
-        timer.current = setTimeout(() => void poll(jobId), 1800);
+      if (['queued', 'processing', 'retrying'].includes(current.status)) {
+        timer.current = setTimeout(() => void poll(pending), 1800);
       } else {
+        sessionStorage.removeItem(storageKey);
         setBusy(false);
       }
     } catch {
@@ -46,8 +62,10 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not start debugging job.');
-      setJob({ id: data.jobId, status: data.status });
-      void poll(data.jobId);
+      const pending = { id: data.jobId as string, token: data.pollToken as string };
+      sessionStorage.setItem(storageKey, JSON.stringify(pending));
+      setJob({ id: pending.id, status: data.status });
+      void poll(pending);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Service unavailable.');
       setBusy(false);
