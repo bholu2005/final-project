@@ -1,185 +1,60 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Crown, Zap, Shield, Star, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import { Check, Crown, Zap, Shield, Star, Info } from 'lucide-react';
 
-export default function PricingPage({ onBack }) {
-    const [billingCycle, setBillingCycle] = useState('monthly'); // monthly, biannual, yearly
-    const [processing, setProcessing] = useState(null);
+const plans = [
+    { name: 'Free', icon: Shield, basePrice: 0, requests: 10, scans: '3 scans / day', features: ['Core static scan', 'AI debugging: 10 requests / day', 'Community self-service'] },
+    { name: 'Silver', icon: Star, basePrice: 800, requests: 50, scans: 'Higher scan allowance', features: ['Standard scan features', 'AI debugging: 50 requests / day', 'Email support'] },
+    { name: 'Gold', icon: Zap, basePrice: 1100, requests: 150, scans: 'Higher scan allowance', features: ['Deep code analysis', 'AI debugging: 150 requests / day', 'Priority support'] },
+    { name: 'Platinum', icon: Crown, basePrice: 2000, requests: 500, scans: 'Higher scan allowance', features: ['Advanced scan features', 'AI debugging: 500 requests / day', 'API access'] },
+    { name: 'Diamond', icon: Crown, basePrice: 5000, requests: 1000, scans: 'Contact for capacity', features: ['Enterprise features', 'AI debugging: 1,000 requests / day', 'Dedicated support options'] },
+];
 
-    // Plans Data (INR)
-    const plans = [
-        { 
-            name: 'Silver', 
-            icon: Shield, 
-            color: 'text-gray-500', 
-            basePrice: 800, 
-            features: ['Standard Scan Speed', 'Basic Security Checks', 'PDF Report Export', 'Email Support'] 
-        },
-        { 
-            name: 'Gold', 
-            icon: Star, 
-            color: 'text-yellow-500', 
-            basePrice: 1100, 
-            features: ['2x Faster Scanning', 'Deep Code Analysis', 'AI Fix Suggestions', 'Priority Support'] 
-        },
-        { 
-            name: 'Platinum', 
-            icon: Zap, 
-            color: 'text-blue-500', 
-            basePrice: 2000, 
-            features: ['5x Lightning Speed', 'Full Security Suite', 'Auto-Patch Code', 'API Access', 'Live URL Monitoring'] 
-        },
-        { 
-            name: 'Diamond', 
-            icon: Crown, 
-            color: 'text-purple-500', 
-            basePrice: 5000, 
-            isDiamond: true,
-            features: ['Dedicated Server', 'Enterprise Security', '24/7 Dedicated Agent', 'Custom Compliance Reports', 'Unlimited Users'] 
-        }
-    ];
-
-    // Price Calculator
-    const getPrice = (plan) => {
-        if (billingCycle === 'monthly') return plan.basePrice;
-        if (billingCycle === 'biannual') return Math.round(plan.basePrice * 6 * 0.90);
-        if (billingCycle === 'yearly') return Math.round(plan.basePrice * 12 * 0.80);
-    };
-
-    // Label Text
-    const getDurationText = (plan) => {
-        if (billingCycle === 'monthly') return '/mo';
-        if (billingCycle === 'biannual') return '/6mo';
-        if (billingCycle === 'yearly') return '/year';
-    };
-
-    // Real-simulation Payment Handler
-    const handlePurchase = async (index) => {
-        setProcessing(index);
-        const plan = plans[index];
-        const price = getPrice(plan);
-        const token = sessionStorage.getItem('auth_token');
-
-        try {
-            if (!token) {
-                alert("Please log in to upgrade your subscription.");
-                setProcessing(null);
-                return;
-            }
-
-            // Call real backend API
-            const response = await axios.post('http://127.0.0.1:8000/api/subscription/upgrade', {
-                plan_name: plan.name,
-                amount: price
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.success) {
-                alert(`Payment Gateway Simulation: Successfully upgraded to ${plan.name}!`);
-                if (onBack) onBack();
-            } else {
-                alert("Upgrade failed: " + (response.data.message || "Unknown error"));
-            }
-        } catch (err) {
-            console.error("Upgrade Error:", err);
-            alert("Failed to connect to the subscription server. Please try again.");
-        } finally {
-            setProcessing(null);
-        }
-    };
+export default function PricingPage() {
+    const [billingCycle, setBillingCycle] = useState('monthly');
+    const priceFor = (plan) => billingCycle === 'yearly' ? Math.round(plan.basePrice * 12 * 0.8) : plan.basePrice;
 
     return (
-        <div className="pt-32 pb-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen font-body text-black">
-            
-            {/* Header */}
-            <div className="text-center mb-12">
-                <span className="text-xs font-bold tracking-widest uppercase bg-black text-white px-4 py-1.5 rounded-full shadow-lg">Premium Upgrade</span>
-                <h2 className="font-heading text-5xl md:text-6xl mt-6 mb-4">Unlock Maximum Power</h2>
-                <p className="text-black/60 text-lg max-w-2xl mx-auto">
-                    Scale your security testing with our premium tiers. Prices in INR.
-                </p>
-            </div>
+        <section className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto min-h-screen font-body text-black">
+            <header className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+                <span className="inline-flex rounded-full bg-black text-white px-4 py-1.5 text-xs font-bold uppercase tracking-widest">Plans & usage</span>
+                <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl mt-5 mb-4">Clear limits. No pretend checkout.</h1>
+                <p className="text-black/60 text-base sm:text-lg">Prices shown in INR. AI requests reset daily at midnight in the application timezone. Each answer has a provider-configured output-token cap; provider API usage may also be billed separately.</p>
+            </header>
 
-            {/* Toggle Duration */}
-            <div className="flex justify-center mb-16">
-                <div className="bg-white p-1.5 rounded-full border border-black/10 shadow-sm flex gap-1">
-                    {['monthly', 'biannual', 'yearly'].map((cycle) => (
-                        <button
-                            key={cycle}
-                            onClick={() => setBillingCycle(cycle)}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${billingCycle === cycle ? 'bg-black text-white shadow-md' : 'text-black/50 hover:bg-gray-50'}`}
-                        >
-                            {cycle === 'monthly' ? 'Monthly' : cycle === 'biannual' ? '6 Months (-10%)' : 'Yearly (-20%)'}
+            <div className="flex justify-center mb-8 sm:mb-12">
+                <div className="inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full border border-black/10 bg-white p-1.5 shadow-sm" aria-label="Billing period">
+                    {['monthly', 'yearly'].map((cycle) => (
+                        <button key={cycle} type="button" aria-pressed={billingCycle === cycle} onClick={() => setBillingCycle(cycle)} className={`rounded-full px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold transition ${billingCycle === cycle ? 'bg-black text-white' : 'text-black/60 hover:bg-gray-100'}`}>
+                            {cycle === 'monthly' ? 'Monthly' : 'Yearly · save 20%'}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Plans Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {plans.map((plan, i) => {
-                    const price = getPrice(plan);
-                    const duration = getDurationText(plan);
-                    const isLocked = plan.isDiamond && billingCycle !== 'yearly';
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 lg:gap-5 items-stretch">
+                {plans.map((plan, index) => {
+                    const Icon = plan.icon;
+                    const price = priceFor(plan);
                     return (
-                        <motion.div 
-                            key={i} 
-                            initial={{ opacity: 0, y: 20 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            transition={{ delay: i * 0.1 }}
-                            className={`bg-white rounded-[2.5rem] p-8 shadow-xl border-2 relative overflow-hidden group flex flex-col hover:scale-105 transition-transform duration-300 ${plan.isDiamond ? 'border-purple-200 shadow-purple-100' : 'border-white'}`}
-                        >
-                            {/* Background Icon */}
-                            <div className={`absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition ${plan.color} rotate-12`}>
-                                <plan.icon size={120} />
-                            </div>
-                            
-                            {/* Header */}
-                            <div className="mb-6 relative z-10">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${plan.isDiamond ? 'bg-purple-100' : 'bg-gray-50'}`}>
-                                    <plan.icon size={28} className={plan.color} />
-                                </div>
-                                <h3 className="text-2xl font-bold">{plan.name}</h3>
-                                {plan.isDiamond && <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Enterprise</span>}
-                            </div>
-
-                            {/* Price (INR) */}
-                            <div className="mb-8 relative z-10">
-                                <div className="text-4xl lg:text-5xl font-heading flex items-end gap-1">
-                                    ₹{price.toLocaleString('en-IN')}
-                                    <span className="text-lg text-black/40 font-body mb-2">{duration}</span>
-                                </div>
-                            </div>
-                            
-                            {/* Features */}
-                            <div className="space-y-4 mb-10 flex-grow relative z-10">
-                                {plan.features.map((feat, j) => (
-                                    <div key={j} className="flex items-start gap-3 text-sm text-black/70">
-                                        <Check size={16} className="text-green-600 mt-0.5 shrink-0" /> 
-                                        <span className="leading-tight">{feat}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Action Button */}
-                            <button 
-                                onClick={() => handlePurchase(i)}
-                                disabled={processing === i}
-                                className={`w-full py-4 rounded-xl font-bold text-white transition shadow-lg flex items-center justify-center gap-2 relative z-10
-                                    ${plan.isDiamond 
-                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-200'
-                                        : 'bg-black hover:bg-gray-900'}
-                                `}
-                            >
-                                {processing === i ? <Loader2 className="animate-spin"/> : 'Choose Plan'}
-                            </button>
-                        </motion.div>
+                        <motion.article key={plan.name} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} className={`relative flex flex-col rounded-3xl border bg-white p-5 sm:p-6 shadow-lg ${plan.name === 'Gold' ? 'border-purple-500 ring-2 ring-purple-500/10' : 'border-black/10'}`}>
+                            {plan.name === 'Gold' && <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-purple-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">Popular</span>}
+                            <div className="flex items-center gap-3 mb-4"><div className="rounded-xl bg-gray-100 p-3"><Icon className="text-purple-600" size={21} /></div><h2 className="text-xl font-bold">{plan.name}</h2></div>
+                            <div className="mb-1 text-3xl sm:text-4xl font-heading">{price === 0 ? 'Free' : `₹${price.toLocaleString('en-IN')}`}</div>
+                            <p className="text-xs text-black/50 mb-5">{price === 0 ? 'Always free' : billingCycle === 'yearly' ? 'per year' : 'per month'}</p>
+                            <div className="rounded-2xl bg-purple-50 p-3 mb-4"><p className="text-xs font-bold text-purple-900">AI requests</p><p className="text-sm text-purple-800">{plan.requests.toLocaleString()} per day</p><p className="text-[10px] text-purple-800/70">Resets daily at midnight</p></div>
+                            <div className="rounded-2xl bg-gray-50 p-3 mb-5"><p className="text-xs font-bold">Scans</p><p className="text-xs text-black/70">{plan.scans}</p></div>
+                            <ul className="space-y-3 flex-grow mb-6">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-xs text-black/70"><Check size={15} className="text-green-600 shrink-0" /><span>{feature}</span></li>)}</ul>
+                            <button type="button" disabled className="w-full rounded-xl bg-gray-200 px-4 py-3 text-xs font-bold text-gray-600 cursor-not-allowed">{plan.basePrice === 0 ? 'Current free tier' : 'Checkout not configured'}</button>
+                        </motion.article>
                     );
                 })}
             </div>
-        </div>
+
+            <aside className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
+                <p className="flex items-center gap-2 font-bold"><Info size={15} /> Billing transparency</p>
+                <p className="mt-2">Paid checkout is not connected yet, so upgrade buttons are intentionally disabled and no payment or plan upgrade is simulated. Daily AI request limits are enforced by the server; model token usage is controlled separately by the AI provider and configured output cap.</p>
+            </aside>
+        </section>
     );
 }
