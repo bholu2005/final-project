@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Merlin Debugger',
-  description: 'Evidence-first AI-assisted software debugging.',
+  description: 'Evidence-first software debugging workspace',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
