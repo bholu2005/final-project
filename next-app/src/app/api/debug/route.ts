@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { debugQueue } from '@/lib/queue';
-import { redis } from '@/lib/redis';
+import { allowRequest } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,10 +19,9 @@ export async function POST(request: Request) {
     if (origin && origin !== process.env.APP_ORIGIN) return NextResponse.json({ error: 'Invalid origin.' }, { status: 403 });
 
     const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const key = `debug-rate:${ip}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, 60);
-    if (count > 10) return NextResponse.json({ error: 'Rate limit reached. Try again in a minute.' }, { status: 429, headers: { 'Retry-After': '60' } });
+    if (!await allowRequest(ip, Number(process.env.RATE_LIMIT_PER_MINUTE || 10))) {
+      return NextResponse.json({ error: 'Rate limit reached. Try again in a minute.' }, { status: 429, headers: { 'Retry-After': '60' } });
+    }
 
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: 'Invalid request. Check field limits and try again.' }, { status: 422 });
@@ -42,14 +40,6 @@ export async function POST(request: Request) {
       provider: process.env.AI_PROVIDER || 'anthropic',
       model: process.env.AI_MODEL || 'not-configured',
     } });
-
-    try {
-      await debugQueue.add('analyze', { jobId: record.id }, { jobId: record.id });
-    } catch (error) {
-      await prisma.debugJob.update({ where: { id: record.id }, data: { status: 'failed', errorCode: 'queue_unavailable' } });
-      throw error;
-    }
-
     return NextResponse.json({ jobId: record.id, status: record.status }, { status: 202 });
   } catch (error) {
     console.error('Could not enqueue debug request:', error instanceof Error ? error.message : 'unknown error');

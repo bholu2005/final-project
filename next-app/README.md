@@ -1,51 +1,54 @@
-# Next.js + PostgreSQL migration starter (Laravel remains unchanged)
+# Merlin Next.js/PostgreSQL migration starter
 
-This directory is an **additive migration foundation**, not a completed replacement for the existing Laravel application. The original Laravel/React app remains the default. Start this isolated Next.js app after configuring the environment below.
+This is an additive prototype; the existing Laravel application is not replaced. It requires your existing PostgreSQL server and Node.js. It does not require Redis, Docker, or a provider signup for the app itself. Live AI responses do require an API key from an AI provider. Without one, jobs report provider-not-configured rather than returning fake answers.
 
-## Local run without Docker
+## Run with your existing PostgreSQL (no Docker/Redis)
 
-Requires Node.js 22, PostgreSQL, Redis, and an AI provider key.
+1. Create a PostgreSQL database and user locally (one-time, using your installed PostgreSQL tools). Set `DATABASE_URL` in `next-app/.env` to that database. Example:
+
+```dotenv
+DATABASE_URL=postgresql://your_user:your_password@localhost:5432/merlin?schema=public
+APP_ORIGIN=http://localhost:3000
+AI_PROVIDER=anthropic
+AI_API_KEY=your_provider_key
+AI_MODEL=claude-3-5-sonnet-latest
+AI_MAX_OUTPUT_TOKENS=1200
+```
+
+2. Install Node.js 22 if it is not already installed, then run:
 
 ```bash
 cd next-app
-cp .env.example .env
-# Edit DATABASE_URL and REDIS_URL for local services; add AI_API_KEY and APP_SECRET.
 npm install
 npx prisma migrate dev --name initial
 npm run dev
 ```
 
-In another terminal:
+3. In a second terminal, start the durable PostgreSQL queue worker:
 
 ```bash
 cd next-app
 npm run worker
 ```
 
-Open http://localhost:3000. The debug endpoint queues requests in Redis and stores status/results in PostgreSQL. Jobs remain in Redis through worker/app restarts when using the provided persistent Docker volumes; workers retry provider failures and drain active jobs on shutdown.
+Open http://localhost:3000. No user login/signup is required by this local prototype. Keep it bound to localhost; it is not yet safe for public internet exposure or multiple users.
 
-## Docker local stack
+## Optional Docker PostgreSQL
 
-From the repository root, copy `next-app/.env.example` to `.env.next`, replace `POSTGRES_PASSWORD` with a unique value and fill in the AI API key. Adjust `DATABASE_URL` to use the password you set (host `postgres` inside Docker). Then run:
+Only use this if you do not want to use your installed PostgreSQL. Copy `.env.docker.example` to repository-root `.env.next`, use a long random `POSTGRES_PASSWORD`, and set DATABASE_URL to the same password. Then run:
 
 ```bash
 docker compose --env-file .env.next -f next-app/docker-compose.yml up --build -d
 ```
 
-Apply schema migration as a one-off container command after build:
+Apply schema migration:
 
 ```bash
 docker compose --env-file .env.next -f next-app/docker-compose.yml run --rm web npx prisma migrate deploy
 ```
 
-Web is bound to localhost port 3000 by default; place a correctly configured TLS reverse proxy in front before exposing it publicly. PostgreSQL and Redis are not host-published. Volumes persist data across container restarts; `docker compose down -v` deletes it.
+Web is bound to localhost port 3000. PostgreSQL is private in the compose network, and its volume persists across restarts. `docker compose down -v` deletes database data.
 
-## Environment
+## Important gaps
 
-Set `DATABASE_URL`, `REDIS_URL`, `APP_ORIGIN`, `APP_SECRET`, `AI_PROVIDER`, `AI_API_KEY`, and `AI_MODEL`. Never commit `.env.next`, API keys, or production secrets. Use a managed secrets store and managed PostgreSQL/Redis in hosted environments.
-
-## Important gaps before production
-
-This is not yet a complete port of every Laravel page, feature, or database model. The first Next UI is a single-user debugging prototype: it does not yet include login, per-user authorization, GitHub repository access, billing, MFA, file uploads, or account-level quotas. Do not publicly expose the debug API until proper identity/auth, ownership checks, CAPTCHA/abuse controls, data retention, and audit coverage are implemented. The rate limiter relies on trusted reverse-proxy client IP headers; configure that proxy to overwrite them. CI/build/tests are still required.
-
-Do not run both stacks against production data during migration. Back up the existing database and plan a tested, reversible data migration before switching traffic.
+The existing Laravel app remains unchanged. This prototype does not yet include account login, GitHub repository access, billing, MFA, full feature parity, or production multi-user authorization. Do not expose it publicly until those are added. Back up PostgreSQL and plan a reversible data migration before any cutover. Add a verified AI provider key only to a private local `.env`, never commit it.

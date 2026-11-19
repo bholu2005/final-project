@@ -1,18 +1,14 @@
-# Next.js migration plan and operational notes
+# Next.js + PostgreSQL migration notes
 
-## Current application vs migration target
+The existing app is Laravel 12 + React/Vite. `next-app/` is an additive local prototype and does not replace Laravel or claim feature parity.
 
-The existing application is Laravel 12 + React 19/Vite. Replacing it in a single change would risk losing working screens and API behavior. The `next-app/` directory therefore starts an additive Next.js App Router + TypeScript service with PostgreSQL (Prisma), Redis/BullMQ durable background jobs, health checks, bounded provider calls, request validation, and local container persistence. Existing Laravel stays in place until the replacement reaches feature parity and has passed migration/acceptance tests.
+## Foundation delivered
+- Next.js App Router/TypeScript debug UI and server endpoints.
+- PostgreSQL/Prisma persistence for queued debug jobs and results.
+- PostgreSQL-backed rate limiting, so no Redis signup/install is needed.
+- Worker claims persisted jobs with PostgreSQL `FOR UPDATE SKIP LOCKED`; jobs survive app/worker restarts and stale processing locks can be reclaimed.
+- Retry/backoff, bounded provider calls, graceful worker shutdown, health endpoint.
+- Optional Docker PostgreSQL for people without a local database; default instructions use an existing local PostgreSQL.
 
-## Phases
-
-1. **Foundation (this commit):** Next.js app shell; PostgreSQL schema; Redis-backed durable debug jobs; worker retries/concurrency; health endpoint; Docker Compose with persistent volumes, restart policies, and private database ports.
-2. **Identity/security:** Real server-side sessions, OAuth callback exchange and state validation, CSRF/origin policy, MFA enrollment/recovery, owner-scoped records and quotas, abuse protection.
-3. **Feature parity:** Port pages and APIs incrementally (dashboard, scans, reports, settings, teams, support, notifications, admin), replacing fake controls with backed features.
-4. **Scanning and GitHub:** Hardened archive parsing and URL SSRF controls, isolated analysis, GitHub App/repository permissions, reviewable pull-request creation. Never automatically merge fixes.
-5. **Billing:** Integrate a payment provider only with signed webhook verification; derive prices and entitlements on the server.
-6. **Migration/cutover:** Export/import with reconciliation, staged traffic, rollback procedure, backups, observability, load/security testing. Remove Laravel only after verified parity and explicit cutover approval.
-
-## Runtime resilience
-
-PostgreSQL and Redis use named Docker volumes. Redis AOF is enabled; BullMQ jobs are retried with exponential backoff; the worker handles SIGTERM/SIGINT and drains work; Next and worker containers restart automatically; the health endpoint probes both stores. This is a local/self-hosted baseline, not a high-availability guarantee: production needs backups, restore drills, TLS, managed databases/Redis, capacity planning, trusted proxy settings, metrics/alerts, and queue failure monitoring.
+## Still required before public launch
+Authentication/ownership, MFA, real GitHub repository/PR integration, verified payment webhooks, full feature migration, archive/URL scan sandboxing, monitoring/backup/restore drills, CI and load/security tests. The prototype is localhost-only; do not make it public until user identity and per-user authorization are implemented.
