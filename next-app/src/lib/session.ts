@@ -6,13 +6,13 @@ export function getSessionSecret(): string {
   return secret;
 }
 
-export function createSessionToken(payload: { userId: string; expiresAt: number }): string {
+export function createSessionToken(payload: { sessionId: string; userId: string; expiresAt: number }): string {
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = createHmac('sha256', getSessionSecret()).update(body).digest('base64url');
   return `${body}.${signature}`;
 }
 
-export function verifySessionToken(token: string): { userId: string; expiresAt: number } | null {
+export function verifySessionToken(token: string): { sessionId: string; userId: string; expiresAt: number } | null {
   try {
     const [body, signature] = token.split('.');
     if (!body || !signature) return null;
@@ -20,12 +20,10 @@ export function verifySessionToken(token: string): { userId: string; expiresAt: 
     const supplied = Buffer.from(signature);
     const check = Buffer.from(expected);
     if (supplied.length !== check.length || !timingSafeEqual(supplied, check)) return null;
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as { userId: string; expiresAt: number };
-    if (!payload.userId || payload.expiresAt < Date.now()) return null;
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as { sessionId: string; userId: string; expiresAt: number };
+    if (!payload.sessionId || !payload.userId || payload.expiresAt < Date.now()) return null;
     return payload;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export function hashToken(token: string): string {
