@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -27,5 +28,10 @@ class User extends Authenticatable
             'last_scan_date' => 'date',
             'last_ai_request_date' => 'date',
         ];
+    }
+
+    public function scans(): HasMany
+    {
+        return $this->hasMany(Scan::class);
     }
 }

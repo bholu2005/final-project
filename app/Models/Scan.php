@@ -4,23 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Scan extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'scan_reference',
         'target_type',
         'target_value',
         'selected_options',
         'status',
         'score',
-        'results' // 🔥 Ye Add kiya hai
+        'results',
     ];
 
     protected $casts = [
         'selected_options' => 'array',
-        'results' => 'array', // 🔥 Ye JSON ko Array banayega
+        'results' => 'array',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

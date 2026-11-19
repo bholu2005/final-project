@@ -3,168 +3,163 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Scan;
-use Illuminate\Support\Str;
 use App\Services\ScanningService;
 use App\Services\UrlScanningService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Throwable;
 
 class ScanController extends Controller
 {
-    // 🚀 INITIATE SCAN & SAVE HISTORY
+    private const FREE_DAILY_SCAN_LIMIT = 3;
+
     public function initiate(Request $request)
     {
-        // 1. User Limit Check
         $user = $request->user();
-        if ($user && $user->plan_type === 'free') {
-            $today = Carbon::today()->toDateString();
-            if ($user->last_scan_date !== $today) {
-                $user->daily_scans_count = 0;
-                $user->last_scan_date = $today;
-                $user->save();
-            }
-            if ($user->daily_scans_count >= 3) {
-                return response()->json(['success' => false, 'message' => 'Daily Limit Reached (3/3). Upgrade to continue.'], 403);
-            }
-        }
+        $validated = $request->validate([
+            'inputType' => 'required|in:zip,url',
+            'file' => 'required_if:inputType,zip|file|mimes:zip|max:51200',
+            'url' => 'required_if:inputType,url|nullable|url|max:2048',
+            'dbFile' => 'nullable|file|mimes:sql,txt|max:10240',
+            'manualChecks' => 'nullable|string|max:4000',
+            'scanScope' => 'nullable|string|in:fullstack,frontend,backend',
+        ]);
 
-        try {
-            // 2. Validation
-            $request->validate([
-                'inputType' => 'required|in:zip,url',
-                'file' => 'nullable|file|max:102400', // 100MB Max
-                'url' => 'nullable|url',
-                'manualChecks' => 'nullable', // JSON string from frontend
-                'scanScope' => 'nullable|string',
-            ]);
-
-            $reference = 'SCAN_' . Str::upper(Str::random(10));
-            $targetValue = '';
-
-            // 3. Handle File Upload
-            if ($request->inputType === 'zip') {
-                if (!$request->hasFile('file')) {
-                    return response()->json(['success' => false, 'message' => 'ZIP file is missing.'], 400);
-                }
-                
-                $file = $request->file('file');
-                $filename = $reference . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('uploads', $filename, 'public');
-                $targetValue = $path;
-            } else {
-                $targetValue = $request->url;
-            }
-
-            // Handle DB File
-            $dbPath = null;
-            if ($request->hasFile('dbFile')) {
-                $dbFile = $request->file('dbFile');
-                $dbFilename = $reference . '_DB.' . $dbFile->getClientOriginalExtension();
-                $dbPath = $dbFile->storeAs('uploads', $dbFilename, 'public');
-            }
-
-            // 4. TRIGGER SCANNING ENGINE
-            $scanResults = [
-                'score' => 100, 
-                'issues' => [], 
-                'file_tree' => [], 
-                'flat_list' => [], 
-                'tables' => []
-            ];
-            
-            if ($request->inputType === 'zip') {
-                $engine = new ScanningService();
-                $scanResults = $engine->runScan($targetValue, $request->scanScope, $dbPath, $request->manualChecks);
-            } else {
-                $urlEngine = new UrlScanningService();
-                $scanResults = $urlEngine->runScan($targetValue);
-            }
-
-            // 5. SAVE TO DATABASE (Critical Step)
-            try {
-                $selectedOptions = json_decode($request->manualChecks, true) ?? [];
-
-                $scan = Scan::create([
-                    'scan_reference' => $reference,
-                    'target_type' => $request->inputType,
-                    'target_value' => (string) $targetValue,
-                    'selected_options' => $selectedOptions,
-                    'status' => 'completed',
-                    'score' => $scanResults['score'],
-                    'results' => $scanResults['issues'] // Array will be cast to JSON automatically by Model
-                ]);
-
-                // Update User Limit
-                if ($user && $user->plan_type === 'free') {
-                    $user->increment('daily_scans_count');
-                }
-
-                // Log Success
-                Log::info("Scan Saved Successfully: " . $scan->id);
-
-            } catch (\Exception $dbError) {
-                Log::error("Database Save Failed: " . $dbError->getMessage());
-                // Note: Continue execution to show results even if save fails, but log it.
-            }
-
-            // 6. Return Response to Frontend
-            return response()->json([
-                'success' => true,
-                'message' => 'Scan Completed Successfully',
-                'scan_id' => $reference,
-                'results' => $scanResults['issues'],
-                'file_tree' => $scanResults['file_tree'] ?? [],
-                'flat_list' => $scanResults['flat_list'] ?? [], 
-                'tables' => $scanResults['tables'] ?? [] 
-            ], 201);
-
-        } catch (\Exception $e) {
-            Log::error("Scan Controller Error: " . $e->getMessage());
+        if (($validated['inputType'] ?? '') === 'url') {
             return response()->json([
                 'success' => false,
-                'message' => 'Server Error: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // 🔍 GET SCAN RESULTS (For Dashboard)
-    public function show($id)
-    {
-        $scan = Scan::where('scan_reference', $id)->first();
-
-        if (!$scan) {
-            return response()->json(['success' => false, 'message' => 'Scan report not found'], 404);
+                'message' => 'URL scanning is temporarily disabled while outbound URL protections are being hardened. ZIP code scans remain available.',
+            ], 503);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $scan
-        ]);
-    }
+        $manualChecks = [];
+        if (! empty($validated['manualChecks'])) {
+            $manualChecks = json_decode($validated['manualChecks'], true);
+            if (! is_array($manualChecks)) {
+                return response()->json(['success' => false, 'message' => 'manualChecks must contain a valid JSON object or array.'], 422);
+            }
+        }
 
-    // 📜 GET HISTORY LIST (For Reports Page)
-    public function index()
-    {
-        $scans = Scan::orderBy('created_at', 'desc')->take(50)->get();
-        return response()->json([
-            'success' => true,
-            'data' => $scans
-        ]);
-    }
+        $isFree = strtolower($user->plan_type ?? 'free') === 'free';
+        if ($isFree) {
+            $reserved = DB::transaction(function () use ($user) {
+                $account = $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+                $today = now()->toDateString();
+                if ($account->last_scan_date?->toDateString() !== $today) {
+                    $account->daily_scans_count = 0;
+                    $account->last_scan_date = $today;
+                }
+                if ($account->daily_scans_count >= self::FREE_DAILY_SCAN_LIMIT) {
+                    $account->save();
+                    return false;
+                }
+                $account->daily_scans_count++;
+                $account->save();
+                return true;
+            });
 
-    // 🗑️ DELETE ALL HISTORY
-    public function destroyAll()
-    {
+            if (! $reserved) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Daily scan limit reached (3/3). Your scans reset at midnight in the application timezone.',
+                    'usage' => ['used' => self::FREE_DAILY_SCAN_LIMIT, 'limit' => self::FREE_DAILY_SCAN_LIMIT],
+                ], 429);
+            }
+        }
+
+        $reference = 'SCAN_'.Str::upper(Str::random(10));
+        $storedPaths = [];
+
         try {
-            Scan::truncate();
-            $files = Storage::allFiles('public/uploads');
-            Storage::delete($files);
-            return response()->json(['success' => true, 'message' => 'History Cleared Successfully']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to clear history'], 500);
+            // Store user archives privately; never publish source-code uploads under public/storage.
+            $archive = $request->file('file');
+            $archivePath = $archive->storeAs('scan-uploads/'.$user->id, $reference.'.zip', 'local');
+            $storedPaths[] = $archivePath;
+
+            $dbPath = null;
+            if ($request->hasFile('dbFile')) {
+                $dbPath = $request->file('dbFile')->storeAs('scan-uploads/'.$user->id, $reference.'_DB.sql', 'local');
+                $storedPaths[] = $dbPath;
+            }
+
+            $scan = Scan::create([
+                'user_id' => $user->id,
+                'scan_reference' => $reference,
+                'target_type' => 'zip',
+                'target_value' => $archivePath,
+                'selected_options' => $manualChecks,
+                'status' => 'processing',
+            ]);
+
+            // The archive scanner receives only a server-generated path in the private local disk.
+            $results = (new ScanningService())->runScan($archivePath, $validated['scanScope'] ?? 'fullstack', $dbPath, $manualChecks);
+            $scan->update([
+                'status' => 'completed',
+                'score' => $results['score'] ?? null,
+                'results' => $results['issues'] ?? [],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Scan completed.',
+                'scan_id' => $reference,
+                'results' => $results['issues'] ?? [],
+                'file_tree' => $results['file_tree'] ?? [],
+                'flat_list' => $results['flat_list'] ?? [],
+                'tables' => $results['tables'] ?? [],
+                'usage' => $isFree ? ['used' => $user->fresh()->daily_scans_count, 'limit' => self::FREE_DAILY_SCAN_LIMIT] : null,
+            ], 201);
+        } catch (Throwable $exception) {
+            foreach ($storedPaths as $path) {
+                Storage::disk('local')->delete($path);
+            }
+            if (isset($scan)) {
+                $scan->update(['status' => 'failed']);
+            }
+            if ($isFree) {
+                $user->newQuery()->whereKey($user->getKey())->where('last_scan_date', now()->toDateString())->where('daily_scans_count', '>', 0)->decrement('daily_scans_count');
+            }
+
+            Log::warning('Scan failed', ['user_id' => $user->id, 'exception' => $exception::class]);
+            return response()->json(['success' => false, 'message' => 'The scan could not be completed. Check that the archive is valid and try again.'], 422);
         }
+    }
+
+    public function show(Request $request, string $id)
+    {
+        $scan = $request->user()->scans()->where('scan_reference', $id)->first();
+        if (! $scan) {
+            return response()->json(['success' => false, 'message' => 'Scan report not found.'], 404);
+        }
+        return response()->json(['success' => true, 'data' => $scan]);
+    }
+
+    public function index(Request $request)
+    {
+        $scans = $request->user()->scans()->latest()->limit(50)->get();
+        return response()->json(['success' => true, 'data' => $scans]);
+    }
+
+    public function destroyAll(Request $request)
+    {
+        $user = $request->user();
+        $scans = $user->scans()->get(['id', 'target_value']);
+        $paths = $scans->pluck('target_value')->filter()->all();
+
+        DB::transaction(function () use ($user) {
+            $user->scans()->delete();
+        });
+
+        foreach ($paths as $path) {
+            if (Str::startsWith($path, 'scan-uploads/'.$user->id.'/')) {
+                Storage::disk('local')->delete($path);
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Your scan history was cleared.']);
     }
 }
