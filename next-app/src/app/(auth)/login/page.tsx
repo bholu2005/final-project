@@ -14,6 +14,7 @@ export default function LoginPage() {
     event.preventDefault();
     setError('');
     setBusy(true);
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -22,10 +23,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const result = await response.json().catch(() => null);
+
       if (!response.ok) {
         setError(result?.error || 'Unable to sign in. Please try again.');
         return;
       }
+
       router.replace('/dashboard');
       router.refresh();
     } catch {
