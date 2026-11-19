@@ -10,7 +10,7 @@ const schema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(12).max(128),
   securityQuestion: z.string().trim().min(3).max(255).optional(),
-  securityAnswer: z.string().trim().min(2).max(255).optional(),
+  securityAnswer: z.string().trim().min(12).max(128).optional(),
 }).strict();
 
 export async function POST(request: Request) {
