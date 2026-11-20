@@ -1,0 +1,69 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: next-app/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env.next
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    init: true
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: next-app/Dockerfile
+    env_file:
+      - ../.env.next
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: next-app/Dockerfile.worker
+    restart: unless-stopped
+    env_file:
+      - ../.env.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: merlin
+      POSTGRES_USER: merlin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.next}
+    volumes:
+      - merlin_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U merlin -d merlin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    shm_size: 256mb
+
+volumes:
+  merlin_pgdata:

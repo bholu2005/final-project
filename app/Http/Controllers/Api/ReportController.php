@@ -6,40 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Scan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class ReportController extends Controller
 {
-    public function download($id, Request $request)
+    public function download(string $id, Request $request)
     {
-        // 1. Authenticate via query token or bearer token
-        $user = auth('sanctum')->user();
-
-        if (!$user && $request->has('token')) {
-            $tokenModel = PersonalAccessToken::findToken($request->query('token'));
-            if ($tokenModel) {
-                $user = $tokenModel->tokenable;
-            }
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
+        $scan = Scan::query()
+            ->where('user_id', $user->id)
+            ->where('scan_reference', $id)
+            ->firstOrFail();
 
-        // 2. Scan Data dhoondo
-        $scan = Scan::where('scan_reference', $id)->firstOrFail();
-
-        // 2. Data Prepare karo
-        $data = [
+        return Pdf::loadView('reports.scan_report', [
             'scan' => $scan,
             'issues' => $scan->results ?? [],
-            'date' => $scan->created_at->format('d M Y, h:i A')
-        ];
-
-        // 3. PDF Generate karo (View file hum abhi banayenge)
-        $pdf = Pdf::loadView('reports.scan_report', $data);
-
-        // 4. Download start karo
-        return $pdf->download('Merlin_Report_' . $id . '.pdf');
+            'date' => $scan->created_at->format('d M Y, h:i A'),
+        ])->download('Merlin_Report_'.$id.'.pdf');
     }
 }

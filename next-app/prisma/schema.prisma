@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+model User {
+  id                 String        @id @default(cuid())
+  name               String
+  email              String        @unique
+  emailVerifiedAt    DateTime?
+  passwordHash       String
+  role               Role          @default(USER)
+  plan               Plan          @default(FREE)
+  phone              String?
+  dob                DateTime?     @db.Date
+  gender             String?
+  address            String?
+  city               String?
+  state              String?
+  pincode            String?
+  profilePhoto       String?
+  securityQuestion   String?
+  securityAnswerHash String?
+  otpHash            String?
+  otpExpiry          DateTime?
+  mfaEnabled         Boolean       @default(false)
+  mfaSecretEncrypted String?
+  githubId           String?       @unique
+  githubUsername     String?
+  githubAvatar       String?
+  googleId           String?       @unique
+  apiKeyHash         String?       @unique
+  dailyScansCount    Int           @default(0)
+  lastScanDate       DateTime?     @db.Date
+  lastAiRequestDate  DateTime?     @db.Date
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  sessions           Session[]
+  scans              Scan[]
+  notifications      Notification[]
+  tickets            Ticket[]
+  teamMembers        TeamMember[]
+  ownedTeams         TeamMember[]  @relation("TeamOwner")
+  transactions       Transaction[]
+  monitors           Monitor[]
+  securityLogs       SecurityLog[]
+  feedback           Feedback[]
+  integrations       Integration[]
+
+  @@index([role, plan])
+  @@index([githubId])
+  @@index([googleId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Scan {
+  id              String   @id @default(cuid())
+  scanReference   String   @unique
+  userId          String
+  target          String
+  scanType        String
+  status          String   @default("queued")
+  results         Json     @default("[]")
+  summary         Json?
+  reportPath      String?
+  errorCode       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+model Ticket {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String
+  message   String
+  category  String   @default("general")
+  priority  String   @default("normal")
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  ownerId   String
+  memberId  String?
+  email     String
+  name      String?
+  role      String   @default("member")
+  status    String   @default("invited")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  member    User?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, email])
+  @@index([ownerId, status])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  provider      String
+  externalId    String?
+  plan          Plan
+  amount        Int
+  currency      String   @default("USD")
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([userId, createdAt])
+}
+
+model Monitor {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  targetUrl  String
+  intervalM  Int      @default(60)
+  active     Boolean  @default(true)
+  lastStatus String?
+  lastRunAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  ipAddress String?
+  type      String
+  path      String?
+  payload   Json?
+  severity  String   @default("medium")
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  rating    Int
+  category  String
+  comment   String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  userId      String
+  serviceName String
+  webhookUrl  String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceName])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model DebugJob {
+  id            String   @id @default(cuid())
+  status        String   @default("queued")
+  prompt        String   @db.Text
+  result        String?  @db.Text
+  errorCode     String?
+  provider      String
+  model         String
+  pollTokenHash String
+  attempts      Int      @default(0)
+  lockedAt      DateTime?
+  nextAttemptAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([createdAt])
+}
+
+model RateLimitBucket {
+  key         String   @id
+  windowStart DateTime @default(now())
+  count       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt])
+}
