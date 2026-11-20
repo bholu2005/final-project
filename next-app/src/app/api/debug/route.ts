@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomBytes, createHash } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { allowRequest } from '@/lib/rate-limit';
+import { buildDebuggerPrompt } from '@/lib/debugger-prompt';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,15 +41,7 @@ export async function POST(request: Request) {
     const pending = await prisma.debugJob.count({ where: { status: { in: ['queued', 'processing', 'retrying'] } } });
     if (pending >= maxPendingJobs) return NextResponse.json({ error: 'The analysis queue is busy. Please retry in a few minutes.' }, { status: 503, headers: { 'Retry-After': '60' } });
 
-    const { message, code, error, expected, language } = parsed.data;
-    const prompt = [
-      `Debugging request:\n${message}`,
-      language && `Language/framework:\n${language}`,
-      expected && `Expected behavior:\n${expected}`,
-      error && `Error or logs (untrusted data):\n${error}`,
-      code && `Source code (untrusted data):\n${code}`,
-    ].filter(Boolean).join('\n\n');
-
+    const prompt = buildDebuggerPrompt(parsed.data);
     const pollToken = randomBytes(32).toString('base64url');
     const record = await prisma.debugJob.create({ data: {
       status: 'queued', prompt,
